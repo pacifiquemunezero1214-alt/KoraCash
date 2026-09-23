@@ -1,3 +1,11 @@
+import os
+import sqlite3
+
+from datetime import datetime
+
+import psycopg
+from psycopg.rows import dict_row
+
 from flask import (
     Blueprint,
     render_template,
@@ -7,9 +15,6 @@ from flask import (
     session,
     flash
 )
-
-import sqlite3
-from datetime import datetime
 
 
 # ============================================================
@@ -27,17 +32,28 @@ admin_bp = Blueprint(
 # DATABASE
 # ============================================================
 
-DATABASE = "koracash.db"
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
-# ============================================================
-# ADMIN CREDENTIALS
-# ============================================================
+DATABASE = os.path.join(
+    BASE_DIR,
+    "koracash.db"
+)
 
-ADMIN_PHONE = "0798386665"
-ADMIN_PASSWORD = "121412"
+DATABASE_URL = os.getenv(
+    "DATABASE_URL"
+)
 
 
 def get_db():
+
+    if DATABASE_URL:
+        return psycopg.connect(
+            DATABASE_URL,
+            row_factory=dict_row
+        )
+
     conn = sqlite3.connect(
         DATABASE,
         timeout=30
@@ -48,7 +64,33 @@ def get_db():
     return conn
 
 
+def execute_db(
+    conn,
+    sql,
+    params=()
+):
+    """
+    Allows the same admin code to work with
+    SQLite and PostgreSQL.
+
+    Existing SQL uses ? placeholders.
+    PostgreSQL uses %s.
+    """
+
+    if DATABASE_URL:
+        sql = sql.replace(
+            "?",
+            "%s"
+        )
+
+    return conn.execute(
+        sql,
+        params
+    )
+
+
 def now_iso():
+
     return datetime.now().isoformat(
         timespec="seconds"
     )
@@ -58,8 +100,32 @@ def now_iso():
 # DATABASE HELPERS
 # ============================================================
 
-def table_exists(conn, table_name):
-    row = conn.execute(
+def table_exists(
+    conn,
+    table_name
+):
+
+    if DATABASE_URL:
+
+        row = execute_db(
+            conn,
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema='public'
+                AND table_name=?
+            ) AS exists
+            """,
+            (table_name,)
+        ).fetchone()
+
+        return bool(
+            row["exists"]
+        )
+
+    row = execute_db(
+        conn,
         """
         SELECT name
         FROM sqlite_master
@@ -72,13 +138,46 @@ def table_exists(conn, table_name):
     return row is not None
 
 
-def column_exists(conn, table_name, column_name):
+def column_exists(
+    conn,
+    table_name,
+    column_name
+):
 
-    if not table_exists(conn, table_name):
+    if not table_exists(
+        conn,
+        table_name
+    ):
         return False
 
-    columns = conn.execute(
-        f"PRAGMA table_info({table_name})"
+    if DATABASE_URL:
+
+        row = execute_db(
+            conn,
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema='public'
+                AND table_name=?
+                AND column_name=?
+            ) AS exists
+            """,
+            (
+                table_name,
+                column_name
+            )
+        ).fetchone()
+
+        return bool(
+            row["exists"]
+        )
+
+    columns = execute_db(
+        conn,
+        f"""
+        PRAGMA table_info({table_name})
+        """
     ).fetchall()
 
     return any(
@@ -87,7 +186,11 @@ def column_exists(conn, table_name, column_name):
     )
 
 
-def safe_value(row, key, default=None):
+def safe_value(
+    row,
+    key,
+    default=None
+):
 
     if row is None:
         return default
@@ -103,11 +206,48 @@ def safe_value(row, key, default=None):
     return value
 
 
+def scalar(
+    row,
+    default=0
+):
+
+    if row is None:
+        return default
+
+    if isinstance(row, dict):
+
+        if len(row) == 0:
+            return default
+
+        value = next(
+            iter(row.values())
+        )
+
+    else:
+
+        try:
+            value = row[0]
+        except Exception:
+            return default
+
+    if value is None:
+        return default
+
+    return value
+
+
 def rows_to_dict(rows):
-    return [
-        dict(row)
-        for row in rows
-    ]
+
+    result = []
+
+    for row in rows:
+
+        if isinstance(row, dict):
+            result.append(dict(row))
+        else:
+            result.append(dict(row))
+
+    return result
 
 
 # ============================================================
@@ -126,59 +266,58 @@ def admin_required():
 # LOGIN
 # ============================================================
 
-@admin_bp.route("/login", methods=["GET", "POST"])
+@admin_bp.route(
+    "/login",
+    methods=["GET", "POST"]
+)
 def admin_login():
 
     if admin_required():
+
         return redirect(
-            url_for("admin.admin_dashboard")
+            url_for(
+                "admin.admin_dashboard"
+            )
         )
 
     if request.method == "POST":
 
         phone = (
-            request.form.get("phone", "")
+            request.form.get(
+                "phone",
+                ""
+            )
             .strip()
         )
 
         password = (
-            request.form.get("password", "")
+            request.form.get(
+                "password",
+                ""
+            )
             .strip()
         )
 
-        # The unified login in app.py is the
-        # primary admin entry point.
-        #
-        # This route remains available for
-        # backward compatibility.
+        # Admin credentials remain the
+        # dedicated admin credentials.
 
-        try:
+        if (
+            phone == "0798386665"
+            and password == "121412"
+        ):
 
-            conn = get_db()
+            session[
+                "admin_logged_in"
+            ] = True
 
-            user = conn.execute(
-                """
-                SELECT *
-                FROM users
-                WHERE phone=?
-                LIMIT 1
-                """,
-                (phone,)
-            ).fetchone()
-
-            conn.close()
-
-        except Exception:
-
-            user = None
-
-        if phone == "0798386665" and password == "121412":
-
-            session["admin_logged_in"] = True
-            session["admin_phone"] = phone
+            session[
+                "admin_phone"
+            ] = phone
 
             return redirect(
-                url_for("admin.admin_dashboard")
+                url_for(
+                    "admin.admin_dashboard"
+                )
             )
 
         flash(
@@ -221,6 +360,7 @@ def admin_logout():
 def admin_dashboard():
 
     if not admin_required():
+
         return redirect(
             url_for("login")
         )
@@ -237,37 +377,62 @@ def admin_dashboard():
         active_users = 0
         inactive_users = 0
 
-        if table_exists(conn, "users"):
+        if table_exists(
+            conn,
+            "users"
+        ):
 
-            total_users = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM users
-                """
-            ).fetchone()[0]
+            total_users = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM users
+                    """
+                ).fetchone()
+            )
 
             if column_exists(
+                conn,
+                "users",
+                "is_active"
+            ):
+
+                active_users = scalar(
+                    execute_db(
+                        conn,
+                        """
+                        SELECT COUNT(*) AS count
+                        FROM users
+                        WHERE is_active=1
+                        """
+                    ).fetchone()
+                )
+
+            elif column_exists(
                 conn,
                 "users",
                 "active"
             ):
 
-                active_users = conn.execute(
-                    """
-                    SELECT COUNT(*)
-                    FROM users
-                    WHERE active=1
-                    """
-                ).fetchone()[0]
-
-                inactive_users = (
-                    total_users - active_users
+                active_users = scalar(
+                    execute_db(
+                        conn,
+                        """
+                        SELECT COUNT(*) AS count
+                        FROM users
+                        WHERE active=1
+                        """
+                    ).fetchone()
                 )
 
             else:
 
                 active_users = total_users
-                inactive_users = 0
+
+            inactive_users = (
+                total_users - active_users
+            )
 
 
         # ----------------------------------------------------
@@ -279,47 +444,62 @@ def admin_dashboard():
         total_earned = 0
         total_withdrawn = 0
 
-        if table_exists(conn, "users"):
+        if table_exists(
+            conn,
+            "users"
+        ):
 
-            total_saved = conn.execute(
-                """
-                SELECT COALESCE(
-                    SUM(saved_balance),
-                    0
-                )
-                FROM users
-                """
-            ).fetchone()[0]
+            total_saved = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COALESCE(
+                        SUM(saved_balance),
+                        0
+                    ) AS total
+                    FROM users
+                    """
+                ).fetchone()
+            )
 
-            total_withdrawable = conn.execute(
-                """
-                SELECT COALESCE(
-                    SUM(withdrawable_balance),
-                    0
-                )
-                FROM users
-                """
-            ).fetchone()[0]
+            total_withdrawable = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COALESCE(
+                        SUM(withdrawable_balance),
+                        0
+                    ) AS total
+                    FROM users
+                    """
+                ).fetchone()
+            )
 
-            total_earned = conn.execute(
-                """
-                SELECT COALESCE(
-                    SUM(total_earned),
-                    0
-                )
-                FROM users
-                """
-            ).fetchone()[0]
+            total_earned = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COALESCE(
+                        SUM(total_earned),
+                        0
+                    ) AS total
+                    FROM users
+                    """
+                ).fetchone()
+            )
 
-            total_withdrawn = conn.execute(
-                """
-                SELECT COALESCE(
-                    SUM(total_withdrawn),
-                    0
-                )
-                FROM users
-                """
-            ).fetchone()[0]
+            total_withdrawn = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COALESCE(
+                        SUM(total_withdrawn),
+                        0
+                    ) AS total
+                    FROM users
+                    """
+                ).fetchone()
+            )
 
 
         # ----------------------------------------------------
@@ -331,36 +511,48 @@ def admin_dashboard():
         completed_cash_ins = 0
         pending_cash_in = 0
 
-        if table_exists(conn, "cash_ins"):
+        if table_exists(
+            conn,
+            "cash_ins"
+        ):
 
-            total_cash_in = conn.execute(
-                """
-                SELECT COALESCE(
-                    SUM(amount),
-                    0
-                )
-                FROM cash_ins
-                WHERE status='Completed'
-                """
-            ).fetchone()[0]
+            total_cash_in = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COALESCE(
+                        SUM(amount),
+                        0
+                    ) AS total
+                    FROM cash_ins
+                    WHERE status='Completed'
+                    """
+                ).fetchone()
+            )
 
             confirmed_cash_in = total_cash_in
 
-            completed_cash_ins = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM cash_ins
-                WHERE status='Completed'
-                """
-            ).fetchone()[0]
+            completed_cash_ins = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM cash_ins
+                    WHERE status='Completed'
+                    """
+                ).fetchone()
+            )
 
-            pending_cash_in = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM cash_ins
-                WHERE status='Pending'
-                """
-            ).fetchone()[0]
+            pending_cash_in = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM cash_ins
+                    WHERE status='Pending'
+                    """
+                ).fetchone()
+            )
 
 
         # ----------------------------------------------------
@@ -377,34 +569,43 @@ def admin_dashboard():
             "withdrawals"
         ):
 
-            total_cash_out = conn.execute(
-                """
-                SELECT COALESCE(
-                    SUM(amount),
-                    0
-                )
-                FROM withdrawals
-                WHERE status='Completed'
-                """
-            ).fetchone()[0]
+            total_cash_out = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COALESCE(
+                        SUM(amount),
+                        0
+                    ) AS total
+                    FROM withdrawals
+                    WHERE status='Completed'
+                    """
+                ).fetchone()
+            )
 
             completed_cash_out = total_cash_out
 
-            completed_cash_outs = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM withdrawals
-                WHERE status='Completed'
-                """
-            ).fetchone()[0]
+            completed_cash_outs = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM withdrawals
+                    WHERE status='Completed'
+                    """
+                ).fetchone()
+            )
 
-            pending_cash_out = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM withdrawals
-                WHERE status='Pending'
-                """
-            ).fetchone()[0]
+            pending_cash_out = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM withdrawals
+                    WHERE status='Pending'
+                    """
+                ).fetchone()
+            )
 
 
         # ----------------------------------------------------
@@ -423,19 +624,42 @@ def admin_dashboard():
             if column_exists(
                 conn,
                 "referrals",
+                "bonus_amount"
+            ):
+
+                referral_rewards = scalar(
+                    execute_db(
+                        conn,
+                        """
+                        SELECT COALESCE(
+                            SUM(bonus_amount),
+                            0
+                        ) AS total
+                        FROM referrals
+                        WHERE status='Completed'
+                        """
+                    ).fetchone()
+                )
+
+            elif column_exists(
+                conn,
+                "referrals",
                 "reward"
             ):
 
-                referral_rewards = conn.execute(
-                    """
-                    SELECT COALESCE(
-                        SUM(reward),
-                        0
-                    )
-                    FROM referrals
-                    WHERE status='Completed'
-                    """
-                ).fetchone()[0]
+                referral_rewards = scalar(
+                    execute_db(
+                        conn,
+                        """
+                        SELECT COALESCE(
+                            SUM(reward),
+                            0
+                        ) AS total
+                        FROM referrals
+                        WHERE status='Completed'
+                        """
+                    ).fetchone()
+                )
 
             elif column_exists(
                 conn,
@@ -443,32 +667,41 @@ def admin_dashboard():
                 "bonus"
             ):
 
-                referral_rewards = conn.execute(
+                referral_rewards = scalar(
+                    execute_db(
+                        conn,
+                        """
+                        SELECT COALESCE(
+                            SUM(bonus),
+                            0
+                        ) AS total
+                        FROM referrals
+                        WHERE status='Completed'
+                        """
+                    ).fetchone()
+                )
+
+            completed_referrals = scalar(
+                execute_db(
+                    conn,
                     """
-                    SELECT COALESCE(
-                        SUM(bonus),
-                        0
-                    )
+                    SELECT COUNT(*) AS count
                     FROM referrals
                     WHERE status='Completed'
                     """
-                ).fetchone()[0]
+                ).fetchone()
+            )
 
-            completed_referrals = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM referrals
-                WHERE status='Completed'
-                """
-            ).fetchone()[0]
-
-            pending_referrals = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM referrals
-                WHERE status='Pending'
-                """
-            ).fetchone()[0]
+            pending_referrals = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM referrals
+                    WHERE status='Pending'
+                    """
+                ).fetchone()
+            )
 
 
         # ----------------------------------------------------
@@ -483,20 +716,26 @@ def admin_dashboard():
             "videos"
         ):
 
-            total_videos = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM videos
-                """
-            ).fetchone()[0]
+            total_videos = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM videos
+                    """
+                ).fetchone()
+            )
 
-            active_videos = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM videos
-                WHERE is_active=1
-                """
-            ).fetchone()[0]
+            active_videos = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM videos
+                    WHERE is_active=1
+                    """
+                ).fetchone()
+            )
 
 
         # ----------------------------------------------------
@@ -511,20 +750,26 @@ def admin_dashboard():
             "tasks"
         ):
 
-            total_tasks = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM tasks
-                """
-            ).fetchone()[0]
+            total_tasks = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM tasks
+                    """
+                ).fetchone()
+            )
 
-            active_tasks = conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM tasks
-                WHERE is_active=1
-                """
-            ).fetchone()[0]
+            active_tasks = scalar(
+                execute_db(
+                    conn,
+                    """
+                    SELECT COUNT(*) AS count
+                    FROM tasks
+                    WHERE is_active=1
+                    """
+                ).fetchone()
+            )
 
 
         # ----------------------------------------------------
@@ -539,7 +784,8 @@ def admin_dashboard():
         ):
 
             recent_users = rows_to_dict(
-                conn.execute(
+                execute_db(
+                    conn,
                     """
                     SELECT *
                     FROM users
@@ -562,14 +808,15 @@ def admin_dashboard():
         ):
 
             recent_cash_ins = rows_to_dict(
-                conn.execute(
+                execute_db(
+                    conn,
                     """
                     SELECT
                         ci.*,
                         u.phone AS phone
                     FROM cash_ins ci
                     LEFT JOIN users u
-                        ON u.id = ci.user_id
+                        ON u.id=ci.user_id
                     ORDER BY ci.id DESC
                     LIMIT 15
                     """
@@ -589,14 +836,15 @@ def admin_dashboard():
         ):
 
             recent_cash_outs = rows_to_dict(
-                conn.execute(
+                execute_db(
+                    conn,
                     """
                     SELECT
                         w.*,
                         u.phone AS phone
                     FROM withdrawals w
                     LEFT JOIN users u
-                        ON u.id = w.user_id
+                        ON u.id=w.user_id
                     ORDER BY w.id DESC
                     LIMIT 15
                     """
@@ -616,14 +864,15 @@ def admin_dashboard():
         ):
 
             recent_transactions = rows_to_dict(
-                conn.execute(
+                execute_db(
+                    conn,
                     """
                     SELECT
                         t.*,
                         u.phone AS phone
                     FROM transactions t
                     LEFT JOIN users u
-                        ON u.id = t.user_id
+                        ON u.id=t.user_id
                     ORDER BY t.id DESC
                     LIMIT 20
                     """
@@ -693,19 +942,19 @@ def admin_dashboard():
 def complete_cash_in(cash_in_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        cash_in = conn.execute(
+        cash_in = execute_db(
+            conn,
             """
             SELECT *
             FROM cash_ins
             WHERE id=?
+            LIMIT 1
             """,
             (cash_in_id,)
         ).fetchone()
@@ -722,7 +971,6 @@ def complete_cash_in(cash_in_id):
                     "admin.admin_dashboard"
                 )
             )
-
 
         if cash_in["status"] != "Pending":
 
@@ -741,30 +989,13 @@ def complete_cash_in(cash_in_id):
 
         conn.close()
 
-
-    # Use the application's existing
-    # confirmation logic when available.
-    #
-    # This avoids duplicating:
-    # - balance updates
-    # - referral rewards
-    # - transaction creation
-    # - notifications
-
     try:
 
         from app import confirm_cash_in
 
-        result = confirm_cash_in(
+        return confirm_cash_in(
             cash_in_id
         )
-
-        flash(
-            "Cash In completed successfully.",
-            "success"
-        )
-
-        return result
 
     except Exception:
 
@@ -791,19 +1022,19 @@ def complete_cash_in(cash_in_id):
 def reject_cash_in(cash_in_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        cash_in = conn.execute(
+        cash_in = execute_db(
+            conn,
             """
             SELECT *
             FROM cash_ins
             WHERE id=?
+            LIMIT 1
             """,
             (cash_in_id,)
         ).fetchone()
@@ -821,7 +1052,6 @@ def reject_cash_in(cash_in_id):
                 )
             )
 
-
         if cash_in["status"] != "Pending":
 
             flash(
@@ -835,8 +1065,8 @@ def reject_cash_in(cash_in_id):
                 )
             )
 
-
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE cash_ins
             SET status='Rejected'
@@ -846,46 +1076,32 @@ def reject_cash_in(cash_in_id):
             (cash_in_id,)
         )
 
-
-        # Notification
-
         if table_exists(
             conn,
             "notifications"
         ):
 
-            if column_exists(
+            execute_db(
                 conn,
-                "notifications",
-                "message"
-            ):
-
-                try:
-
-                    conn.execute(
-                        """
-                        INSERT INTO notifications
-                        (
-                            user_id,
-                            title,
-                            message,
-                            is_read,
-                            created_at
-                        )
-                        VALUES
-                        (?, ?, ?, 0, ?)
-                        """,
-                        (
-                            cash_in["user_id"],
-                            "Cash In Rejected",
-                            "Your Cash In request was rejected.",
-                            now_iso()
-                        )
-                    )
-
-                except Exception:
-                    pass
-
+                """
+                INSERT INTO notifications
+                (
+                    user_id,
+                    title,
+                    message,
+                    is_read,
+                    created_at
+                )
+                VALUES
+                (?, ?, ?, 0, ?)
+                """,
+                (
+                    cash_in["user_id"],
+                    "Cash In Rejected",
+                    "Your Cash In request was rejected.",
+                    now_iso()
+                )
+            )
 
         conn.commit()
 
@@ -894,9 +1110,14 @@ def reject_cash_in(cash_in_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN CASH IN REJECT ERROR:",
+            e
+        )
 
         flash(
             "Unable to reject Cash In.",
@@ -906,7 +1127,6 @@ def reject_cash_in(cash_in_id):
     finally:
 
         conn.close()
-
 
     return redirect(
         url_for(
@@ -926,19 +1146,19 @@ def reject_cash_in(cash_in_id):
 def complete_cash_out(withdrawal_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        withdrawal = conn.execute(
+        withdrawal = execute_db(
+            conn,
             """
             SELECT *
             FROM withdrawals
             WHERE id=?
+            LIMIT 1
             """,
             (withdrawal_id,)
         ).fetchone()
@@ -956,7 +1176,6 @@ def complete_cash_out(withdrawal_id):
                 )
             )
 
-
         if withdrawal["status"] != "Pending":
 
             flash(
@@ -970,11 +1189,10 @@ def complete_cash_out(withdrawal_id):
                 )
             )
 
-
         completed_at = now_iso()
 
-
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE withdrawals
             SET
@@ -989,77 +1207,111 @@ def complete_cash_out(withdrawal_id):
             )
         )
 
-
-        # Mark the related withdrawal
-        # transaction as completed.
-
         if table_exists(
             conn,
             "transactions"
         ):
 
-            transaction = conn.execute(
-                """
-                SELECT id
-                FROM transactions
-                WHERE user_id=?
-                AND type='WITHDRAWAL'
-                AND amount=?
-                AND status='Pending'
-                ORDER BY id DESC
-                LIMIT 1
-                """,
-                (
-                    withdrawal["user_id"],
-                    withdrawal["amount"]
-                )
-            ).fetchone()
+            if column_exists(
+                conn,
+                "transactions",
+                "transaction_type"
+            ):
+
+                transaction = execute_db(
+                    conn,
+                    """
+                    SELECT id
+                    FROM transactions
+                    WHERE user_id=?
+                    AND transaction_type='WITHDRAWAL'
+                    AND amount=?
+                    AND status='Pending'
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (
+                        withdrawal["user_id"],
+                        withdrawal["amount"]
+                    )
+                ).fetchone()
+
+            else:
+
+                transaction = execute_db(
+                    conn,
+                    """
+                    SELECT id
+                    FROM transactions
+                    WHERE user_id=?
+                    AND type='WITHDRAWAL'
+                    AND amount=?
+                    AND status='Pending'
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (
+                        withdrawal["user_id"],
+                        withdrawal["amount"]
+                    )
+                ).fetchone()
 
             if transaction:
 
-                conn.execute(
-                    """
-                    UPDATE transactions
-                    SET status='Completed'
-                    WHERE id=?
-                    """,
-                    (transaction["id"],)
-                )
+                if column_exists(
+                    conn,
+                    "transactions",
+                    "transaction_type"
+                ):
 
+                    execute_db(
+                        conn,
+                        """
+                        UPDATE transactions
+                        SET status='Completed'
+                        WHERE id=?
+                        """,
+                        (transaction["id"],)
+                    )
 
-        # Notification
+                else:
+
+                    execute_db(
+                        conn,
+                        """
+                        UPDATE transactions
+                        SET status='Completed'
+                        WHERE id=?
+                        """,
+                        (transaction["id"],)
+                    )
 
         if table_exists(
             conn,
             "notifications"
         ):
 
-            try:
-
-                conn.execute(
-                    """
-                    INSERT INTO notifications
-                    (
-                        user_id,
-                        title,
-                        message,
-                        is_read,
-                        created_at
-                    )
-                    VALUES
-                    (?, ?, ?, 0, ?)
-                    """,
-                    (
-                        withdrawal["user_id"],
-                        "Withdrawal Completed",
-                        "Your Cash Out request has been completed.",
-                        completed_at
-                    )
+            execute_db(
+                conn,
+                """
+                INSERT INTO notifications
+                (
+                    user_id,
+                    title,
+                    message,
+                    is_read,
+                    created_at
                 )
-
-            except Exception:
-                pass
-
+                VALUES
+                (?, ?, ?, 0, ?)
+                """,
+                (
+                    withdrawal["user_id"],
+                    "Withdrawal Completed",
+                    "Your Cash Out request has been completed.",
+                    completed_at
+                )
+            )
 
         conn.commit()
 
@@ -1068,9 +1320,14 @@ def complete_cash_out(withdrawal_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN CASH OUT COMPLETE ERROR:",
+            e
+        )
 
         flash(
             "Unable to complete Cash Out.",
@@ -1080,7 +1337,6 @@ def complete_cash_out(withdrawal_id):
     finally:
 
         conn.close()
-
 
     return redirect(
         url_for(
@@ -1100,19 +1356,19 @@ def complete_cash_out(withdrawal_id):
 def reject_cash_out(withdrawal_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        withdrawal = conn.execute(
+        withdrawal = execute_db(
+            conn,
             """
             SELECT *
             FROM withdrawals
             WHERE id=?
+            LIMIT 1
             """,
             (withdrawal_id,)
         ).fetchone()
@@ -1130,7 +1386,6 @@ def reject_cash_out(withdrawal_id):
                 )
             )
 
-
         if withdrawal["status"] != "Pending":
 
             flash(
@@ -1144,15 +1399,12 @@ def reject_cash_out(withdrawal_id):
                 )
             )
 
-
-        amount = float(
+        amount = int(
             withdrawal["amount"] or 0
         )
 
-
-        # Refund withdrawable balance.
-
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE users
             SET
@@ -1189,10 +1441,8 @@ def reject_cash_out(withdrawal_id):
             )
         )
 
-
-        # Mark withdrawal rejected.
-
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE withdrawals
             SET status='Rejected'
@@ -1202,34 +1452,59 @@ def reject_cash_out(withdrawal_id):
             (withdrawal_id,)
         )
 
-
-        # Mark transaction rejected.
-
         if table_exists(
             conn,
             "transactions"
         ):
 
-            transaction = conn.execute(
-                """
-                SELECT id
-                FROM transactions
-                WHERE user_id=?
-                AND type='WITHDRAWAL'
-                AND amount=?
-                AND status='Pending'
-                ORDER BY id DESC
-                LIMIT 1
-                """,
-                (
-                    withdrawal["user_id"],
-                    amount
-                )
-            ).fetchone()
+            if column_exists(
+                conn,
+                "transactions",
+                "transaction_type"
+            ):
+
+                transaction = execute_db(
+                    conn,
+                    """
+                    SELECT id
+                    FROM transactions
+                    WHERE user_id=?
+                    AND transaction_type='WITHDRAWAL'
+                    AND amount=?
+                    AND status='Pending'
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (
+                        withdrawal["user_id"],
+                        amount
+                    )
+                ).fetchone()
+
+            else:
+
+                transaction = execute_db(
+                    conn,
+                    """
+                    SELECT id
+                    FROM transactions
+                    WHERE user_id=?
+                    AND type='WITHDRAWAL'
+                    AND amount=?
+                    AND status='Pending'
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (
+                        withdrawal["user_id"],
+                        amount
+                    )
+                ).fetchone()
 
             if transaction:
 
-                conn.execute(
+                execute_db(
+                    conn,
                     """
                     UPDATE transactions
                     SET status='Rejected'
@@ -1238,40 +1513,32 @@ def reject_cash_out(withdrawal_id):
                     (transaction["id"],)
                 )
 
-
-        # Notification.
-
         if table_exists(
             conn,
             "notifications"
         ):
 
-            try:
-
-                conn.execute(
-                    """
-                    INSERT INTO notifications
-                    (
-                        user_id,
-                        title,
-                        message,
-                        is_read,
-                        created_at
-                    )
-                    VALUES
-                    (?, ?, ?, 0, ?)
-                    """,
-                    (
-                        withdrawal["user_id"],
-                        "Withdrawal Rejected",
-                        "Your Cash Out request was rejected and the amount was refunded.",
-                        now_iso()
-                    )
+            execute_db(
+                conn,
+                """
+                INSERT INTO notifications
+                (
+                    user_id,
+                    title,
+                    message,
+                    is_read,
+                    created_at
                 )
-
-            except Exception:
-                pass
-
+                VALUES
+                (?, ?, ?, 0, ?)
+                """,
+                (
+                    withdrawal["user_id"],
+                    "Withdrawal Rejected",
+                    "Your Cash Out request was rejected and the amount was refunded.",
+                    now_iso()
+                )
+            )
 
         conn.commit()
 
@@ -1280,9 +1547,14 @@ def reject_cash_out(withdrawal_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN CASH OUT REJECT ERROR:",
+            e
+        )
 
         flash(
             "Unable to reject Cash Out.",
@@ -1292,7 +1564,6 @@ def reject_cash_out(withdrawal_id):
     finally:
 
         conn.close()
-
 
     return redirect(
         url_for(
@@ -1309,16 +1580,15 @@ def reject_cash_out(withdrawal_id):
 def admin_users():
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
         users = rows_to_dict(
-            conn.execute(
+            execute_db(
+                conn,
                 """
                 SELECT *
                 FROM users
@@ -1330,7 +1600,6 @@ def admin_users():
     finally:
 
         conn.close()
-
 
     return render_template(
         "admin_users.html",
@@ -1349,22 +1618,39 @@ def admin_users():
 def activate_user(user_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        conn.execute(
-            """
-            UPDATE users
-            SET active=1
-            WHERE id=?
-            """,
-            (user_id,)
-        )
+        if column_exists(
+            conn,
+            "users",
+            "is_active"
+        ):
+
+            execute_db(
+                conn,
+                """
+                UPDATE users
+                SET is_active=1
+                WHERE id=?
+                """,
+                (user_id,)
+            )
+
+        else:
+
+            execute_db(
+                conn,
+                """
+                UPDATE users
+                SET active=1
+                WHERE id=?
+                """,
+                (user_id,)
+            )
 
         conn.commit()
 
@@ -1373,9 +1659,14 @@ def activate_user(user_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN ACTIVATE USER ERROR:",
+            e
+        )
 
         flash(
             "Unable to activate user.",
@@ -1386,9 +1677,10 @@ def activate_user(user_id):
 
         conn.close()
 
-
     return redirect(
-        url_for("admin.admin_users")
+        url_for(
+            "admin.admin_users"
+        )
     )
 
 
@@ -1403,22 +1695,39 @@ def activate_user(user_id):
 def deactivate_user(user_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        conn.execute(
-            """
-            UPDATE users
-            SET active=0
-            WHERE id=?
-            """,
-            (user_id,)
-        )
+        if column_exists(
+            conn,
+            "users",
+            "is_active"
+        ):
+
+            execute_db(
+                conn,
+                """
+                UPDATE users
+                SET is_active=0
+                WHERE id=?
+                """,
+                (user_id,)
+            )
+
+        else:
+
+            execute_db(
+                conn,
+                """
+                UPDATE users
+                SET active=0
+                WHERE id=?
+                """,
+                (user_id,)
+            )
 
         conn.commit()
 
@@ -1427,9 +1736,14 @@ def deactivate_user(user_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN DEACTIVATE USER ERROR:",
+            e
+        )
 
         flash(
             "Unable to deactivate user.",
@@ -1440,9 +1754,10 @@ def deactivate_user(user_id):
 
         conn.close()
 
-
     return redirect(
-        url_for("admin.admin_users")
+        url_for(
+            "admin.admin_users"
+        )
     )
 
 
@@ -1454,16 +1769,15 @@ def deactivate_user(user_id):
 def admin_transactions():
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
         transactions = rows_to_dict(
-            conn.execute(
+            execute_db(
+                conn,
                 """
                 SELECT
                     t.*,
@@ -1481,11 +1795,52 @@ def admin_transactions():
 
         conn.close()
 
+    # This template may not exist in the current
+    # repository, so return safely if unavailable.
 
-    return render_template(
-        "admin_transactions.html",
-        transactions=transactions
-    )
+    try:
+
+        return render_template(
+            "admin_transactions.html",
+            transactions=transactions
+        )
+
+    except Exception:
+
+        return render_template(
+            "admin_dashboard.html",
+            admin_phone=session.get(
+                "admin_phone",
+                ""
+            ),
+            total_users=0,
+            active_users=0,
+            inactive_users=0,
+            total_saved=0,
+            total_withdrawable=0,
+            withdrawable_balance=0,
+            total_earned=0,
+            total_withdrawn=0,
+            total_cash_in=0,
+            confirmed_cash_in=0,
+            completed_cash_ins=0,
+            pending_cash_in=0,
+            total_cash_out=0,
+            completed_cash_out=0,
+            completed_cash_outs=0,
+            pending_cash_out=0,
+            referral_rewards=0,
+            completed_referrals=0,
+            pending_referrals=0,
+            active_videos=0,
+            total_videos=0,
+            active_tasks=0,
+            total_tasks=0,
+            recent_users=[],
+            recent_cash_ins=[],
+            recent_cash_outs=[],
+            recent_transactions=transactions
+        )
 
 
 # ============================================================
@@ -1496,16 +1851,15 @@ def admin_transactions():
 def admin_tasks():
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
         tasks = rows_to_dict(
-            conn.execute(
+            execute_db(
+                conn,
                 """
                 SELECT *
                 FROM tasks
@@ -1517,7 +1871,6 @@ def admin_tasks():
     finally:
 
         conn.close()
-
 
     return render_template(
         "admin_tasks.html",
@@ -1536,15 +1889,14 @@ def admin_tasks():
 def activate_task(task_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE tasks
             SET is_active=1
@@ -1560,9 +1912,14 @@ def activate_task(task_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN ACTIVATE TASK ERROR:",
+            e
+        )
 
         flash(
             "Unable to activate task.",
@@ -1573,9 +1930,10 @@ def activate_task(task_id):
 
         conn.close()
 
-
     return redirect(
-        url_for("admin.admin_tasks")
+        url_for(
+            "admin.admin_tasks"
+        )
     )
 
 
@@ -1590,15 +1948,14 @@ def activate_task(task_id):
 def deactivate_task(task_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE tasks
             SET is_active=0
@@ -1614,9 +1971,14 @@ def deactivate_task(task_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN DEACTIVATE TASK ERROR:",
+            e
+        )
 
         flash(
             "Unable to deactivate task.",
@@ -1627,9 +1989,10 @@ def deactivate_task(task_id):
 
         conn.close()
 
-
     return redirect(
-        url_for("admin.admin_tasks")
+        url_for(
+            "admin.admin_tasks"
+        )
     )
 
 
@@ -1641,16 +2004,15 @@ def deactivate_task(task_id):
 def admin_videos():
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
         videos = rows_to_dict(
-            conn.execute(
+            execute_db(
+                conn,
                 """
                 SELECT *
                 FROM videos
@@ -1662,7 +2024,6 @@ def admin_videos():
     finally:
 
         conn.close()
-
 
     return render_template(
         "admin_videos.html",
@@ -1681,15 +2042,14 @@ def admin_videos():
 def activate_video(video_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE videos
             SET is_active=1
@@ -1705,9 +2065,14 @@ def activate_video(video_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN ACTIVATE VIDEO ERROR:",
+            e
+        )
 
         flash(
             "Unable to activate video.",
@@ -1718,9 +2083,10 @@ def activate_video(video_id):
 
         conn.close()
 
-
     return redirect(
-        url_for("admin.admin_videos")
+        url_for(
+            "admin.admin_videos"
+        )
     )
 
 
@@ -1735,15 +2101,14 @@ def activate_video(video_id):
 def deactivate_video(video_id):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE videos
             SET is_active=0
@@ -1759,9 +2124,14 @@ def deactivate_video(video_id):
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN DEACTIVATE VIDEO ERROR:",
+            e
+        )
 
         flash(
             "Unable to deactivate video.",
@@ -1772,9 +2142,10 @@ def deactivate_video(video_id):
 
         conn.close()
 
-
     return redirect(
-        url_for("admin.admin_videos")
+        url_for(
+            "admin.admin_videos"
+        )
     )
 
 
@@ -1786,16 +2157,15 @@ def deactivate_video(video_id):
 def admin_activities():
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
         activities = rows_to_dict(
-            conn.execute(
+            execute_db(
+                conn,
                 """
                 SELECT
                     da.*,
@@ -1803,18 +2173,13 @@ def admin_activities():
                     v.title AS video_title,
                     t.title AS task_title
                 FROM daily_activities da
-
                 LEFT JOIN users u
                     ON u.id=da.user_id
-
                 LEFT JOIN videos v
                     ON v.id=da.video_id
-
                 LEFT JOIN tasks t
                     ON t.id=da.task_id
-
                 ORDER BY da.id DESC
-
                 LIMIT 500
                 """
             ).fetchall()
@@ -1823,7 +2188,6 @@ def admin_activities():
     finally:
 
         conn.close()
-
 
     return render_template(
         "admin_activities.html",
@@ -1841,9 +2205,7 @@ def admin_activities():
 def admin_task_submissions():
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
@@ -1859,23 +2221,19 @@ def admin_task_submissions():
         else:
 
             submissions = rows_to_dict(
-                conn.execute(
+                execute_db(
+                    conn,
                     """
                     SELECT
                         ts.*,
                         u.phone AS phone,
                         t.title AS task_title
-
                     FROM task_submissions ts
-
                     LEFT JOIN users u
                         ON u.id=ts.user_id
-
                     LEFT JOIN tasks t
                         ON t.id=ts.task_id
-
                     ORDER BY ts.id DESC
-
                     LIMIT 500
                     """
                 ).fetchall()
@@ -1884,7 +2242,6 @@ def admin_task_submissions():
     finally:
 
         conn.close()
-
 
     return render_template(
         "admin_task_submissions.html",
@@ -1904,15 +2261,14 @@ def task_submission_detail(
 ):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        submission = conn.execute(
+        submission = execute_db(
+            conn,
             """
             SELECT
                 ts.*,
@@ -1924,17 +2280,12 @@ def task_submission_detail(
                 t.option_c,
                 t.option_d,
                 t.correct_answer
-
             FROM task_submissions ts
-
             LEFT JOIN users u
                 ON u.id=ts.user_id
-
             LEFT JOIN tasks t
                 ON t.id=ts.task_id
-
             WHERE ts.id=?
-
             LIMIT 1
             """,
             (submission_id,)
@@ -1943,7 +2294,6 @@ def task_submission_detail(
     finally:
 
         conn.close()
-
 
     if not submission:
 
@@ -1957,7 +2307,6 @@ def task_submission_detail(
                 "admin.admin_task_submissions"
             )
         )
-
 
     return render_template(
         "admin_task_submission_detail.html",
@@ -1978,19 +2327,19 @@ def approve_task_submission(
 ):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        submission = conn.execute(
+        submission = execute_db(
+            conn,
             """
             SELECT *
             FROM task_submissions
             WHERE id=?
+            LIMIT 1
             """,
             (submission_id,)
         ).fetchone()
@@ -2008,7 +2357,6 @@ def approve_task_submission(
                 )
             )
 
-
         if submission["status"] != "Pending":
 
             flash(
@@ -2022,16 +2370,16 @@ def approve_task_submission(
                 )
             )
 
-
-        task = conn.execute(
+        task = execute_db(
+            conn,
             """
             SELECT *
             FROM tasks
             WHERE id=?
+            LIMIT 1
             """,
             (submission["task_id"],)
         ).fetchone()
-
 
         reward = 1000
 
@@ -2041,8 +2389,8 @@ def approve_task_submission(
                 task["reward"]
             )
 
-
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE task_submissions
             SET
@@ -2053,8 +2401,8 @@ def approve_task_submission(
             (submission_id,)
         )
 
-
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE users
             SET
@@ -2079,97 +2427,137 @@ def approve_task_submission(
             )
         )
 
-
-        # Prevent duplicate transaction.
-
-        existing_transaction = None
-
         if table_exists(
             conn,
             "transactions"
         ):
 
-            existing_transaction = conn.execute(
-                """
-                SELECT id
-                FROM transactions
-                WHERE user_id=?
-                AND type='TASK_REWARD'
-                AND description LIKE ?
-                LIMIT 1
-                """,
-                (
-                    submission["user_id"],
-                    f"%submission {submission_id}%"
-                )
-            ).fetchone()
-
-
-        if not existing_transaction:
-
-            if table_exists(
+            if column_exists(
                 conn,
-                "transactions"
+                "transactions",
+                "transaction_type"
             ):
 
-                conn.execute(
+                existing_transaction = execute_db(
+                    conn,
                     """
-                    INSERT INTO transactions
-                    (
-                        user_id,
-                        type,
-                        amount,
-                        status,
-                        description,
-                        created_at
-                    )
-                    VALUES
-                    (?, ?, ?, ?, ?, ?)
+                    SELECT id
+                    FROM transactions
+                    WHERE user_id=?
+                    AND transaction_type='TASK_REWARD'
+                    AND description LIKE ?
+                    LIMIT 1
                     """,
                     (
                         submission["user_id"],
-                        "TASK_REWARD",
-                        reward,
-                        "Completed",
-                        f"Task reward - submission {submission_id}",
-                        now_iso()
+                        f"%submission {submission_id}%"
                     )
-                )
+                ).fetchone()
 
+            else:
 
-        # Notification
+                existing_transaction = execute_db(
+                    conn,
+                    """
+                    SELECT id
+                    FROM transactions
+                    WHERE user_id=?
+                    AND type='TASK_REWARD'
+                    AND description LIKE ?
+                    LIMIT 1
+                    """,
+                    (
+                        submission["user_id"],
+                        f"%submission {submission_id}%"
+                    )
+                ).fetchone()
+
+            if not existing_transaction:
+
+                if column_exists(
+                    conn,
+                    "transactions",
+                    "transaction_type"
+                ):
+
+                    execute_db(
+                        conn,
+                        """
+                        INSERT INTO transactions
+                        (
+                            user_id,
+                            transaction_type,
+                            amount,
+                            status,
+                            description,
+                            created_at
+                        )
+                        VALUES
+                        (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            submission["user_id"],
+                            "TASK_REWARD",
+                            reward,
+                            "Completed",
+                            f"Task reward - submission {submission_id}",
+                            now_iso()
+                        )
+                    )
+
+                else:
+
+                    execute_db(
+                        conn,
+                        """
+                        INSERT INTO transactions
+                        (
+                            user_id,
+                            type,
+                            amount,
+                            status,
+                            description,
+                            created_at
+                        )
+                        VALUES
+                        (?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            submission["user_id"],
+                            "TASK_REWARD",
+                            reward,
+                            "Completed",
+                            f"Task reward - submission {submission_id}",
+                            now_iso()
+                        )
+                    )
 
         if table_exists(
             conn,
             "notifications"
         ):
 
-            try:
-
-                conn.execute(
-                    """
-                    INSERT INTO notifications
-                    (
-                        user_id,
-                        title,
-                        message,
-                        is_read,
-                        created_at
-                    )
-                    VALUES
-                    (?, ?, ?, 0, ?)
-                    """,
-                    (
-                        submission["user_id"],
-                        "Task Approved",
-                        f"Your task was approved. You earned {reward:,} Frw.",
-                        now_iso()
-                    )
+            execute_db(
+                conn,
+                """
+                INSERT INTO notifications
+                (
+                    user_id,
+                    title,
+                    message,
+                    is_read,
+                    created_at
                 )
-
-            except Exception:
-                pass
-
+                VALUES
+                (?, ?, ?, 0, ?)
+                """,
+                (
+                    submission["user_id"],
+                    "Task Approved",
+                    f"Your task was approved. You earned {reward:,} Frw.",
+                    now_iso()
+                )
+            )
 
         conn.commit()
 
@@ -2178,9 +2566,14 @@ def approve_task_submission(
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN APPROVE TASK ERROR:",
+            e
+        )
 
         flash(
             "Unable to approve submission.",
@@ -2190,7 +2583,6 @@ def approve_task_submission(
     finally:
 
         conn.close()
-
 
     return redirect(
         url_for(
@@ -2212,19 +2604,19 @@ def reject_task_submission(
 ):
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     conn = get_db()
 
     try:
 
-        submission = conn.execute(
+        submission = execute_db(
+            conn,
             """
             SELECT *
             FROM task_submissions
             WHERE id=?
+            LIMIT 1
             """,
             (submission_id,)
         ).fetchone()
@@ -2242,7 +2634,6 @@ def reject_task_submission(
                 )
             )
 
-
         if submission["status"] != "Pending":
 
             flash(
@@ -2256,8 +2647,8 @@ def reject_task_submission(
                 )
             )
 
-
-        conn.execute(
+        execute_db(
+            conn,
             """
             UPDATE task_submissions
             SET
@@ -2268,38 +2659,32 @@ def reject_task_submission(
             (submission_id,)
         )
 
-
         if table_exists(
             conn,
             "notifications"
         ):
 
-            try:
-
-                conn.execute(
-                    """
-                    INSERT INTO notifications
-                    (
-                        user_id,
-                        title,
-                        message,
-                        is_read,
-                        created_at
-                    )
-                    VALUES
-                    (?, ?, ?, 0, ?)
-                    """,
-                    (
-                        submission["user_id"],
-                        "Task Rejected",
-                        "Your task submission was rejected.",
-                        now_iso()
-                    )
+            execute_db(
+                conn,
+                """
+                INSERT INTO notifications
+                (
+                    user_id,
+                    title,
+                    message,
+                    is_read,
+                    created_at
                 )
-
-            except Exception:
-                pass
-
+                VALUES
+                (?, ?, ?, 0, ?)
+                """,
+                (
+                    submission["user_id"],
+                    "Task Rejected",
+                    "Your task submission was rejected.",
+                    now_iso()
+                )
+            )
 
         conn.commit()
 
@@ -2308,9 +2693,14 @@ def reject_task_submission(
             "success"
         )
 
-    except Exception:
+    except Exception as e:
 
         conn.rollback()
+
+        print(
+            "ADMIN REJECT TASK ERROR:",
+            e
+        )
 
         flash(
             "Unable to reject submission.",
@@ -2320,7 +2710,6 @@ def reject_task_submission(
     finally:
 
         conn.close()
-
 
     return redirect(
         url_for(
@@ -2337,9 +2726,7 @@ def reject_task_submission(
 def admin_search():
 
     if not admin_required():
-        return redirect(
-            url_for("login")
-        )
+        return redirect(url_for("login"))
 
     query = (
         request.args.get(
@@ -2361,7 +2748,8 @@ def admin_search():
         ):
 
             users = rows_to_dict(
-                conn.execute(
+                execute_db(
+                    conn,
                     """
                     SELECT *
                     FROM users
@@ -2379,12 +2767,20 @@ def admin_search():
 
         conn.close()
 
+    try:
 
-    return render_template(
-        "admin_search.html",
-        query=query,
-        users=users
-    )
+        return render_template(
+            "admin_search.html",
+            query=query,
+            users=users
+        )
+
+    except Exception:
+
+        return render_template(
+            "admin_users.html",
+            users=users
+        )
 
 
 # ============================================================
