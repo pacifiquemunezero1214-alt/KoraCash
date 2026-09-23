@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login - KoraCash</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(4, 35, 70, 0.94),
+                    rgba(0, 128, 120, 0.88)
+                ),
+                url("https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=80");
+
+            background-size: cover;
+            background-position: center;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .brand {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .brand h1 {
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .brand p {
+            font-size: 14px;
+            margin-top: 6px;
+            opacity: .9;
+        }
+
+        .card {
+            background: rgba(255,255,255,.97);
+            border-radius: 25px;
+            padding: 30px 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,.28);
+        }
+
+        h2 {
+            color: #102a43;
+            font-size: 26px;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 6px;
+            margin-bottom: 22px;
+        }
+
+        .field {
+            margin-bottom: 17px;
+        }
+
+        label {
+            display: block;
+            color: #334e68;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 7px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #d9e2ec;
+            border-radius: 13px;
+            outline: none;
+            font-size: 15px;
+        }
+
+        input:focus {
+            border-color: #008f83;
+            box-shadow: 0 0 0 3px rgba(0,143,131,.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            border: none;
+            border-radius: 14px;
+            padding: 15px;
+
+            background: linear-gradient(
+                135deg,
+                #008f83,
+                #006f68
+            );
+
+            color: white;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+
+            box-shadow: 0 8px 20px rgba(0,111,104,.25);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .register {
+            text-align: center;
+            margin-top: 21px;
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .register a {
+            color: #008f83;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .forgot {
+            text-align: right;
+            margin-top: -7px;
+            margin-bottom: 18px;
+        }
+
+        .forgot a {
+            color: #008f83;
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .flash {
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .flash.success {
+            background: #e8fff3;
+            color: #087443;
+        }
+
+        .flash.danger {
+            background: #fff0f0;
+            color: #b42318;
+        }
+
+        .flash.warning {
+            background: #fff8e6;
+            color: #8a5a00;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 25px 18px;
+                border-radius: 21px;
+            }
+
+            .brand h1 {
+                font-size: 31px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="brand">
+        <h1>KoraCash</h1>
+        <p>Save • Earn • Grow</p>
+    </div>
+
+    <div class="card">
+
+        <h2>Welcome back 👋</h2>
+
+        <p class="subtitle">
+            Login to continue to your KoraCash account.
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('login') }}">
+
+            <div class="field">
+                <label>Phone Number</label>
+
+                <input
+                    type="tel"
+                    name="phone"
+                    placeholder="07XXXXXXXX"
+                    required
+                    autocomplete="tel"
+                >
+            </div>
+
+            <div class="field">
+                <label>Password</label>
+
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <div class="forgot">
+                <a href="#">
+                    Forgot password?
+                </a>
+            </div>
+
+            <button
+                type="submit"
+                class="login-btn"
+            >
+                Login
+            </button>
+
+        </form>
+
+        <div class="register">
+            Don't have an account?
+            <a href="{{ url_for('register') }}">
+                Create Account
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

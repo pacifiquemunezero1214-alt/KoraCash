@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KoraCash - Submission</title>
+<style>
+body{margin:0;font-family:Arial;background:#f4f7fb;color:#172033}
+header{background:white;padding:17px 22px;border-bottom:1px solid #e5eaf0}
+.logo{font-size:22px;font-weight:800;color:#1463ff}
+.container{width:min(700px,94%);margin:25px auto}
+.card{background:white;border:1px solid #e5eaf0;border-radius:18px;padding:22px}
+.row{padding:13px 0;border-bottom:1px solid #edf0f4}
+.label{display:block;color:#667085;font-size:12px;margin-bottom:5px}
+.value{font-weight:700}
+.badge{display:inline-block;padding:7px 12px;border-radius:20px;font-size:12px;font-weight:700}
+.approved{background:#eafaf0;color:#16803c}
+.rejected{background:#fff0f0;color:#b42318}
+.pending{background:#fff8df;color:#946200}
+a{display:inline-block;margin-top:18px;text-decoration:none;color:#1463ff;font-weight:700}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">KoraCash Admin</div>
+</header>
+
+<main class="container">
+
+<div class="card">
+
+<h2>Task Submission #{{ submission.id }}</h2>
+
+<div class="row">
+<span class="label">User</span>
+<span class="value">{{ submission.phone }}</span>
+</div>
+
+<div class="row">
+<span class="label">Task</span>
+<span class="value">{{ submission.task_title }}</span>
+</div>
+
+<div class="row">
+<span class="label">Activity Date</span>
+<span class="value">{{ submission.activity_date }}</span>
+</div>
+
+<div class="row">
+<span class="label">Selected Answer</span>
+<span class="value">{{ submission.selected_answer }}</span>
+</div>
+
+<div class="row">
+<span class="label">Reward</span>
+<span class="value">
+{{ "{:,.0f}".format(submission.reward or 0) }} Frw
+</span>
+</div>
+
+<div class="row">
+<span class="label">Status</span>
+
+{% if submission.status == "Approved" %}
+<span class="badge approved">Approved</span>
+{% elif submission.status == "Rejected" %}
+<span class="badge rejected">Rejected</span>
+{% else %}
+<span class="badge pending">{{ submission.status }}</span>
+{% endif %}
+
+</div>
+
+<div class="row">
+<span class="label">Reviewer Note</span>
+<span class="value">
+{{ submission.reviewer_note or "-" }}
+</span>
+</div>
+
+<a href="{{ url_for('admin.task_submissions') }}">
+← Back to submissions
+</a>
+
+</div>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - KoraCash</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #17202a;
+            min-height: 100vh;
+            padding-bottom: 90px;
+        }
+
+        .topbar {
+            background: linear-gradient(135deg, #087f5b, #12b886);
+            color: white;
+            padding: 24px 20px 35px;
+            border-radius: 0 0 28px 28px;
+        }
+
+        .topbar-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            font-size: 21px;
+        }
+
+        .profile-head {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .avatar {
+            width: 78px;
+            height: 78px;
+            margin: auto;
+            border-radius: 50%;
+            background: white;
+            color: #087f5b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            font-weight: 800;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .profile-head h1 {
+            margin-top: 12px;
+            font-size: 21px;
+        }
+
+        .profile-head p {
+            margin-top: 5px;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 650px;
+            margin: -18px auto 0;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 800;
+            margin-bottom: 16px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 13px 0;
+            border-bottom: 1px solid #edf0f2;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .label {
+            color: #7a8490;
+            font-size: 14px;
+        }
+
+        .value {
+            font-weight: 700;
+            font-size: 14px;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        .balance-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .balance-box {
+            padding: 16px;
+            border-radius: 16px;
+            background: #f3fbf8;
+        }
+
+        .balance-box small {
+            display: block;
+            color: #75808a;
+            margin-bottom: 7px;
+        }
+
+        .balance-box strong {
+            font-size: 18px;
+            color: #087f5b;
+        }
+
+        .referral-box {
+            background: linear-gradient(135deg, #e8fff6, #f7fffc);
+            border: 1px solid #c8f3e3;
+        }
+
+        .referral-code {
+            background: white;
+            border: 1px dashed #12b886;
+            padding: 14px;
+            border-radius: 13px;
+            text-align: center;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #087f5b;
+            margin-bottom: 12px;
+        }
+
+        .referral-link {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e1e6ea;
+            border-radius: 12px;
+            font-size: 12px;
+            background: #f8f9fa;
+            margin-bottom: 12px;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button,
+        .action-btn {
+            border: none;
+            padding: 13px;
+            border-radius: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .copy-btn {
+            background: #087f5b;
+            color: white;
+        }
+
+        .share-btn {
+            background: #e9f7f2;
+            color: #087f5b;
+        }
+
+        .menu-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            color: #17202a;
+            border: 1px solid #edf0f2;
+            margin-bottom: 10px;
+            text-decoration: none;
+        }
+
+        .menu-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 11px;
+            background: #e9f7f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logout {
+            background: #fff1f1;
+            color: #d63031;
+            border: 1px solid #ffd7d7;
+        }
+
+        .flash {
+            padding: 13px 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .flash.success {
+            background: #e9f9f1;
+            color: #087f5b;
+        }
+
+        .flash.error {
+            background: #fff0f0;
+            color: #c0392b;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
+            background: white;
+            border-top: 1px solid #e8ecef;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            z-index: 100;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.06);
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: #7a8490;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        .nav-item.active {
+            color: #087f5b;
+        }
+
+        @media (max-width: 420px) {
+            .balance-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div class="topbar-row">
+        <div class="brand">KoraCash</div>
+
+        <a href="{{ url_for('home') }}" class="back-btn">←</a>
+    </div>
+
+    <div class="profile-head">
+
+        <div class="avatar">
+            👤
+        </div>
+
+        <h1>My Profile</h1>
+
+        <p>{{ user.phone }}</p>
+
+    </div>
+
+</header>
+
+
+<main class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+
+    <!-- ACCOUNT INFORMATION -->
+
+    <section class="card">
+
+        <div class="card-title">
+            Account Information
+        </div>
+
+        <div class="info-row">
+            <span class="label">Phone</span>
+            <span class="value">{{ user.phone }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="label">Registration Date</span>
+            <span class="value">{{ user.created_at }}</span>
+        </div>
+
+        <div class="info-row">
+            <span class="label">Referral Code</span>
+            <span class="value">{{ user.referral_code }}</span>
+        </div>
+
+    </section>
+
+
+    <!-- BALANCES -->
+
+    <section class="card">
+
+        <div class="card-title">
+            Balance Summary
+        </div>
+
+        <div class="balance-grid">
+
+            <div class="balance-box">
+                <small>Withdrawable</small>
+                <strong>
+                    {{ "{:,.0f}".format(user.withdrawable_balance or 0) }} Frw
+                </strong>
+            </div>
+
+            <div class="balance-box">
+                <small>Saved</small>
+                <strong>
+                    {{ "{:,.0f}".format(user.saved_balance or 0) }} Frw
+                </strong>
+            </div>
+
+            <div class="balance-box">
+                <small>Total Earned</small>
+                <strong>
+                    {{ "{:,.0f}".format(user.total_earned or 0) }} Frw
+                </strong>
+            </div>
+
+            <div class="balance-box">
+                <small>Total Withdrawn</small>
+                <strong>
+                    {{ "{:,.0f}".format(user.total_withdrawn or 0) }} Frw
+                </strong>
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- REFERRAL -->
+
+    <section class="card referral-box">
+
+        <div class="card-title">
+            Invite Friends & Earn
+        </div>
+
+        <div class="referral-code">
+            {{ user.referral_code }}
+        </div>
+
+        <input
+            id="referralLink"
+            class="referral-link"
+            type="text"
+            readonly
+            value="{{ request.url_root.rstrip('/') }}{{ url_for('register') }}?ref={{ user.referral_code }}"
+        >
+
+        <div class="button-row">
+
+            <button
+                type="button"
+                class="copy-btn"
+                onclick="copyReferral()"
+            >
+                📋 Copy Link
+            </button>
+
+            <button
+                type="button"
+                class="share-btn"
+                onclick="shareReferral()"
+            >
+                📤 Share
+            </button>
+
+        </div>
+
+        <p style="margin-top:13px; font-size:13px; color:#68737d;">
+            Earn 1,500 Frw when a new user registers using your referral link.
+        </p>
+
+    </section>
+
+
+    <!-- ACCOUNT ACTIONS -->
+
+    <section class="card">
+
+        <div class="card-title">
+            Account
+        </div>
+
+        <a
+            href="{{ url_for('change_password') }}"
+            class="action-btn menu-btn"
+        >
+            <span class="menu-left">
+                <span class="menu-icon">🔐</span>
+                <span>Change Password</span>
+            </span>
+
+            <span>›</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('notifications') }}"
+            class="action-btn menu-btn"
+        >
+            <span class="menu-left">
+                <span class="menu-icon">🔔</span>
+                <span>Notifications</span>
+            </span>
+
+            <span>›</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('help_center') }}"
+            class="action-btn menu-btn"
+        >
+            <span class="menu-left">
+                <span class="menu-icon">❓</span>
+                <span>Help Center</span>
+            </span>
+
+            <span>›</span>
+        </a>
+
+
+        <a
+            href="{{ url_for('logout') }}"
+            class="action-btn menu-btn logout"
+        >
+            <span class="menu-left">
+                <span class="menu-icon">🚪</span>
+                <span>Logout</span>
+            </span>
+
+            <span>›</span>
+        </a>
+
+    </section>
+
+</main>
+
+
+<!-- BOTTOM NAV -->
+
+<nav class="bottom-nav">
+
+    <a
+        href="{{ url_for('home') }}"
+        class="nav-item"
+    >
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+    </a>
+
+    <a
+        href="{{ url_for('cash_in') }}"
+        class="nav-item"
+    >
+        <span class="nav-icon">💰</span>
+        <span>Cash In</span>
+    </a>
+
+    <a
+        href="{{ url_for('cash_out') }}"
+        class="nav-item"
+    >
+        <span class="nav-icon">💸</span>
+        <span>Cash Out</span>
+    </a>
+
+    <a
+        href="{{ url_for('profile') }}"
+        class="nav-item active"
+    >
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+    </a>
+
+</nav>
+
+
+<script>
+
+function copyReferral() {
+
+    const input = document.getElementById("referralLink");
+
+    navigator.clipboard.writeText(input.value)
+        .then(() => {
+            alert("Referral link copied!");
+        })
+        .catch(() => {
+
+            input.select();
+            document.execCommand("copy");
+
+            alert("Referral link copied!");
+
+        });
+}
+
+
+async function shareReferral() {
+
+    const input = document.getElementById("referralLink");
+
+    const text =
+        "Join me on KoraCash and start earning. Register here: "
+        + input.value;
+
+    if (navigator.share) {
+
+        try {
+
+            await navigator.share({
+                title: "Join KoraCash",
+                text: text,
+                url: input.value
+            });
+
+        } catch (error) {
+            // User cancelled sharing.
+        }
+
+    } else {
+
+        await navigator.clipboard.writeText(input.value);
+
+        alert("Referral link copied. You can now share it.");
+
+    }
+}
+
+</script>
+
+</body>
+</html>

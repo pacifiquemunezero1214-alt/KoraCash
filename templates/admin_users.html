@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KoraCash Admin - Users</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#f4f7fb;color:#172033}
+header{background:#fff;padding:16px 22px;border-bottom:1px solid #e5eaf0;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:22px;font-weight:800;color:#1463ff}
+a{text-decoration:none;color:#1463ff;font-weight:700}
+.container{width:min(1150px,94%);margin:25px auto}
+.card{background:#fff;border:1px solid #e5eaf0;border-radius:18px;overflow:hidden}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:850px}
+th,td{padding:13px 15px;text-align:left;border-bottom:1px solid #edf0f4;font-size:13px}
+th{background:#f8fafc;color:#667085;font-size:12px}
+.badge{padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.active{background:#eafaf0;color:#16803c}
+.inactive{background:#fff0f0;color:#b42318}
+button{border:0;border-radius:8px;padding:8px 11px;font-weight:700;cursor:pointer}
+.deactivate{background:#fff0f0;color:#b42318}
+.activate{background:#eafaf0;color:#16803c}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">KoraCash Admin</div>
+<a href="{{ url_for('admin.admin_dashboard') }}">← Dashboard</a>
+</header>
+
+<main class="container">
+<h1>Users</h1>
+<p>Total users: <strong>{{ users|length }}</strong></p>
+
+<div class="card">
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Phone</th>
+<th>Saved</th>
+<th>Withdrawable</th>
+<th>Earned</th>
+<th>Withdrawn</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody>
+{% for user in users %}
+<tr>
+<td>#{{ user.id }}</td>
+<td>{{ user.phone }}</td>
+<td>{{ "{:,.0f}".format(user.total_saved or 0) }} Frw</td>
+<td>{{ "{:,.0f}".format(user.withdrawable_balance or 0) }} Frw</td>
+<td>{{ "{:,.0f}".format(user.total_earned or 0) }} Frw</td>
+<td>{{ "{:,.0f}".format(user.total_withdrawn or 0) }} Frw</td>
+
+<td>
+{% if user.is_active %}
+<span class="badge active">ACTIVE</span>
+{% else %}
+<span class="badge inactive">INACTIVE</span>
+{% endif %}
+</td>
+
+<td>
+<form method="POST"
+action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+{% if user.is_active %}
+<button class="deactivate">Deactivate</button>
+{% else %}
+<button class="activate">Activate</button>
+{% endif %}
+</form>
+</td>
+</tr>
+{% else %}
+<tr>
+<td colspan="8">No users found.</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</body>
+</html>

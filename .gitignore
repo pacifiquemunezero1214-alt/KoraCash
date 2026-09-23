@@ -1,0 +1,8 @@
+﻿.env
+.env.txt
+__pycache__/
+*.pyc
+koracash.db
+*_backup_*.py
+*_backup_*.db
+*_backup_*

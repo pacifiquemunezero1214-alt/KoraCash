@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>KoraCash Admin Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f6fa;
+            color: #182033;
+            padding-bottom: 30px;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button {
+            font-family: inherit;
+        }
+
+        .topbar {
+            height: 68px;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e9f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: 900;
+            color: #1464f4;
+        }
+
+        .brand span {
+            color: #202938;
+        }
+
+        .admin-label {
+            color: #858d9c;
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-phone {
+            background: #f1f4f9;
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-size: 12px;
+            color: #596375;
+        }
+
+        .logout {
+            background: #fff0f0;
+            color: #c83333;
+            border-radius: 10px;
+            padding: 9px 13px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .container {
+            width: min(1400px, 94%);
+            margin: 25px auto;
+        }
+
+        .page-header {
+            margin-bottom: 22px;
+        }
+
+        .page-header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .page-header p {
+            color: #7a8392;
+            font-size: 13px;
+        }
+
+        .section {
+            margin-top: 28px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 13px;
+        }
+
+        .section-title {
+            font-size: 19px;
+            font-weight: 900;
+        }
+
+        .section-subtitle {
+            color: #818a99;
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e6eaf1;
+            border-radius: 17px;
+            padding: 18px;
+        }
+
+        .stat-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .stat-icon {
+            width: 39px;
+            height: 39px;
+            border-radius: 11px;
+            background: #edf3ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+        }
+
+        .stat-label {
+            color: #7b8493;
+            font-size: 11px;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 900;
+        }
+
+        .stat-note {
+            color: #8a93a1;
+            font-size: 10px;
+            margin-top: 7px;
+        }
+
+        .pending {
+            color: #c78316;
+        }
+
+        .success {
+            color: #17834a;
+        }
+
+        .danger {
+            color: #c63333;
+        }
+
+        .info {
+            color: #1464f4;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e6eaf1;
+            border-radius: 18px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 17px 18px;
+            border-bottom: 1px solid #edf0f4;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .panel-title {
+            font-size: 15px;
+            font-weight: 900;
+        }
+
+        .panel-body {
+            padding: 0;
+        }
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            padding: 16px;
+        }
+
+        .action-card {
+            border: 1px solid #e5e9f0;
+            border-radius: 14px;
+            padding: 15px;
+            background: #fbfcfe;
+            transition: .2s;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            border-color: #cbd8f4;
+        }
+
+        .action-icon {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .action-title {
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 3px;
+        }
+
+        .action-description {
+            font-size: 10px;
+            color: #7d8695;
+            line-height: 1.5;
+        }
+
+        .action-arrow {
+            color: #1464f4;
+            font-size: 12px;
+            font-weight: 800;
+            margin-top: 8px;
+            display: inline-block;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 700px;
+        }
+
+        th {
+            text-align: left;
+            background: #f8f9fc;
+            color: #737d8d;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            padding: 11px 13px;
+            border-bottom: 1px solid #e9edf3;
+        }
+
+        td {
+            padding: 13px;
+            border-bottom: 1px solid #eef1f5;
+            font-size: 12px;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .user-cell {
+            font-weight: 800;
+        }
+
+        .muted {
+            color: #8a93a0;
+            font-size: 10px;
+            margin-top: 3px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px 9px;
+            border-radius: 20px;
+            font-size: 9px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .badge-pending {
+            background: #fff5df;
+            color: #a66c0e;
+        }
+
+        .badge-completed {
+            background: #e9f9ef;
+            color: #167540;
+        }
+
+        .badge-rejected {
+            background: #fff0f0;
+            color: #bd3232;
+        }
+
+        .badge-active {
+            background: #e9f9ef;
+            color: #167540;
+        }
+
+        .badge-inactive {
+            background: #f0f2f5;
+            color: #737b88;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .small-button {
+            border: none;
+            border-radius: 8px;
+            padding: 7px 9px;
+            font-size: 9px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .button-complete {
+            background: #e9f9ef;
+            color: #167540;
+        }
+
+        .button-reject {
+            background: #fff0f0;
+            color: #bd3232;
+        }
+
+        .button-blue {
+            background: #edf3ff;
+            color: #1464f4;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 30px 15px;
+            color: #8992a0;
+            font-size: 12px;
+        }
+
+        .activity-summary {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .activity-box {
+            background: white;
+            border: 1px solid #e6eaf1;
+            border-radius: 14px;
+            padding: 14px;
+        }
+
+        .activity-box-label {
+            font-size: 10px;
+            color: #7d8695;
+            margin-bottom: 6px;
+        }
+
+        .activity-box-value {
+            font-size: 18px;
+            font-weight: 900;
+        }
+
+        .footer {
+            text-align: center;
+            color: #9299a6;
+            font-size: 10px;
+            margin-top: 30px;
+        }
+
+        .flash-container {
+            margin-bottom: 15px;
+        }
+
+        .flash {
+            padding: 12px 15px;
+            border-radius: 11px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .flash.success {
+            background: #e9f9ef;
+            color: #167540;
+        }
+
+        .flash.error {
+            background: #fff0f0;
+            color: #bd3232;
+        }
+
+        .flash.info {
+            background: #edf3ff;
+            color: #1854bd;
+        }
+
+        .search-box {
+            padding: 13px 16px;
+            border-bottom: 1px solid #edf0f4;
+        }
+
+        .search-box input {
+            width: 100%;
+            border: 1px solid #dfe4ec;
+            border-radius: 10px;
+            padding: 10px 12px;
+            outline: none;
+            font-size: 12px;
+        }
+
+        .search-box input:focus {
+            border-color: #1464f4;
+        }
+
+        .section-link {
+            color: #1464f4;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        @media (max-width: 1100px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .activity-summary {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 800px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .activity-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .topbar {
+                padding: 0 15px;
+            }
+
+            .admin-phone {
+                display: none;
+            }
+        }
+
+        @media (max-width: 550px) {
+            .container {
+                width: 92%;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 9px;
+            }
+
+            .stat-card {
+                padding: 14px;
+            }
+
+            .stat-value {
+                font-size: 17px;
+            }
+
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .activity-summary {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .page-header h1 {
+                font-size: 23px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div>
+        <div class="brand">
+            Kora<span>Cash</span>
+        </div>
+
+        <div class="admin-label">
+            Administrator Dashboard
+        </div>
+    </div>
+
+    <div class="top-right">
+
+        <div class="admin-phone">
+            Admin:
+            {{ admin_phone|default("Administrator") }}
+        </div>
+
+        <a
+            href="{{ url_for('admin.admin_logout') }}"
+            class="logout"
+        >
+            Logout
+        </a>
+
+    </div>
+
+</header>
+
+
+<main class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+
+                {% for category, message in messages %}
+
+                    <div class="flash {{ category }}">
+                        {{ message }}
+                    </div>
+
+                {% endfor %}
+
+            </div>
+        {% endif %}
+    {% endwith %}
+
+
+    <!-- PAGE HEADER -->
+
+    <section class="page-header">
+
+        <h1>
+            Admin Dashboard
+        </h1>
+
+        <p>
+            Monitor KoraCash users, money flow, activities and platform performance.
+        </p>
+
+    </section>
+
+
+    <!-- MAIN STATISTICS -->
+
+    <section class="stats-grid">
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+                <div class="stat-icon">👥</div>
+
+                <span class="badge badge-active">
+                    {{ active_users|default(0) }} Active
+                </span>
+            </div>
+
+            <div class="stat-label">
+                Total Users
+            </div>
+
+            <div class="stat-value">
+                {{ total_users|default(0) }}
+            </div>
+
+            <div class="stat-note">
+                {{ inactive_users|default(0) }} inactive accounts
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+                <div class="stat-icon">💰</div>
+            </div>
+
+            <div class="stat-label">
+                Total Saved
+            </div>
+
+            <div class="stat-value">
+                {{ "{:,.0f}".format(total_saved|default(0)) }} Frw
+            </div>
+
+            <div class="stat-note">
+                User savings balance
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+                <div class="stat-icon">💵</div>
+
+                <span class="badge badge-completed">
+                    Available
+                </span>
+            </div>
+
+            <div class="stat-label">
+                Withdrawable Balance
+            </div>
+
+            <div class="stat-value">
+                {{ "{:,.0f}".format(total_withdrawable|default(withdrawable_balance|default(0))) }} Frw
+            </div>
+
+            <div class="stat-note">
+                Current user withdrawable funds
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+                <div class="stat-icon">🎁</div>
+            </div>
+
+            <div class="stat-label">
+                Total Earned
+            </div>
+
+            <div class="stat-value">
+                {{ "{:,.0f}".format(total_earned|default(0)) }} Frw
+            </div>
+
+            <div class="stat-note">
+                All platform earnings
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+                <div class="stat-icon">💸</div>
+            </div>
+
+            <div class="stat-label">
+                Total Withdrawn
+            </div>
+
+            <div class="stat-value">
+                {{ "{:,.0f}".format(total_withdrawn|default(0)) }} Frw
+            </div>
+
+            <div class="stat-note">
+                User withdrawals
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+                <div class="stat-icon">📥</div>
+
+                {% if pending_cash_in|default(0) > 0 %}
+                    <span class="badge badge-pending">
+                        {{ pending_cash_in }} Pending
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="stat-label">
+                Confirmed Cash In
+            </div>
+
+            <div class="stat-value">
+                {{ "{:,.0f}".format(confirmed_cash_in|default(total_cash_in|default(0))) }} Frw
+            </div>
+
+            <div class="stat-note">
+                {{ pending_cash_in|default(0) }} requests awaiting review
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+                <div class="stat-icon">📤</div>
+
+                {% if pending_cash_out|default(0) > 0 %}
+                    <span class="badge badge-pending">
+                        {{ pending_cash_out }} Pending
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="stat-label">
+                Completed Cash Out
+            </div>
+
+            <div class="stat-value">
+                {{ "{:,.0f}".format(completed_cash_out|default(total_cash_out|default(0))) }} Frw
+            </div>
+
+            <div class="stat-note">
+                {{ pending_cash_out|default(0) }} requests awaiting review
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-top">
+                <div class="stat-icon">🔗</div>
+
+                {% if pending_referrals|default(0) > 0 %}
+                    <span class="badge badge-pending">
+                        {{ pending_referrals }} Pending
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="stat-label">
+                Referral Rewards
+            </div>
+
+            <div class="stat-value">
+                {{ "{:,.0f}".format(referral_rewards|default(0)) }} Frw
+            </div>
+
+            <div class="stat-note">
+                {{ completed_referrals|default(0) }} completed referrals
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ACTIVITY SUMMARY -->
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <div>
+                <div class="section-title">
+                    Platform Activity
+                </div>
+
+                <div class="section-subtitle">
+                    Current content and activity engine status.
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="activity-summary">
+
+            <div class="activity-box">
+
+                <div class="activity-box-label">
+                    Active Videos
+                </div>
+
+                <div class="activity-box-value">
+                    {{ active_videos|default(0) }}/{{ total_videos|default(0) }}
+                </div>
+
+            </div>
+
+
+            <div class="activity-box">
+
+                <div class="activity-box-label">
+                    Active Tasks
+                </div>
+
+                <div class="activity-box-value">
+                    {{ active_tasks|default(0) }}/{{ total_tasks|default(0) }}
+                </div>
+
+            </div>
+
+
+            <div class="activity-box">
+
+                <div class="activity-box-label">
+                    Pending Cash In
+                </div>
+
+                <div class="activity-box-value pending">
+                    {{ pending_cash_in|default(0) }}
+                </div>
+
+            </div>
+
+
+            <div class="activity-box">
+
+                <div class="activity-box-label">
+                    Pending Cash Out
+                </div>
+
+                <div class="activity-box-value pending">
+                    {{ pending_cash_out|default(0) }}
+                </div>
+
+            </div>
+
+
+            <div class="activity-box">
+
+                <div class="activity-box-label">
+                    Pending Referrals
+                </div>
+
+                <div class="activity-box-value pending">
+                    {{ pending_referrals|default(0) }}
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- MANAGEMENT -->
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <div>
+                <div class="section-title">
+                    Management
+                </div>
+
+                <div class="section-subtitle">
+                    Manage KoraCash platform content and operations.
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="dashboard-grid">
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <div class="panel-title">
+                            Activity Management
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="action-grid">
+
+                    <a
+                        href="{{ url_for('admin.admin_tasks') }}"
+                        class="action-card"
+                    >
+                        <div class="action-icon">📝</div>
+
+                        <div class="action-title">
+                            Task Library
+                        </div>
+
+                        <div class="action-description">
+                            Manage multiple-choice tasks and categories.
+                        </div>
+
+                        <span class="action-arrow">
+                            Open →
+                        </span>
+                    </a>
+
+
+                    <a
+                        href="{{ url_for('admin.admin_task_submissions') }}"
+                        class="action-card"
+                    >
+                        <div class="action-icon">✅</div>
+
+                        <div class="action-title">
+                            Task Submissions
+                        </div>
+
+                        <div class="action-description">
+                            Review task submissions and activity history.
+                        </div>
+
+                        <span class="action-arrow">
+                            Open →
+                        </span>
+                    </a>
+
+
+                    <a
+                        href="{{ url_for('admin.admin_videos') }}"
+                        class="action-card"
+                    >
+                        <div class="action-icon">🎬</div>
+
+                        <div class="action-title">
+                            Video Library
+                        </div>
+
+                        <div class="action-description">
+                            Manage videos, categories, sources and licenses.
+                        </div>
+
+                        <span class="action-arrow">
+                            Open →
+                        </span>
+                    </a>
+
+
+                    <a
+                        href="{{ url_for('admin.admin_activities') }}"
+                        class="action-card"
+                    >
+                        <div class="action-icon">📊</div>
+
+                        <div class="action-title">
+                            Daily Activities
+                        </div>
+
+                        <div class="action-description">
+                            Monitor automatic daily user activities.
+                        </div>
+
+                        <span class="action-arrow">
+                            Open →
+                        </span>
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <div class="panel-title">
+                            Financial Management
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="action-grid">
+
+                    <a
+                        href="#cashIn"
+                        class="action-card"
+                    >
+                        <div class="action-icon">📥</div>
+
+                        <div class="action-title">
+                            Cash In
+                        </div>
+
+                        <div class="action-description">
+                            Review and confirm pending deposits.
+                        </div>
+
+                        <span class="action-arrow">
+                            Review below ↓
+                        </span>
+                    </a>
+
+
+                    <a
+                        href="#cashOut"
+                        class="action-card"
+                    >
+                        <div class="action-icon">📤</div>
+
+                        <div class="action-title">
+                            Cash Out
+                        </div>
+
+                        <div class="action-description">
+                            Process pending withdrawal requests.
+                        </div>
+
+                        <span class="action-arrow">
+                            Review below ↓
+                        </span>
+                    </a>
+
+
+                    <a
+                        href="{{ url_for('admin.admin_users') }}"
+                        class="action-card"
+                    >
+                        <div class="action-icon">👥</div>
+
+                        <div class="action-title">
+                            Users
+                        </div>
+
+                        <div class="action-description">
+                            View and manage registered KoraCash users.
+                        </div>
+
+                        <span class="action-arrow">
+                            Open →
+                        </span>
+                    </a>
+
+
+                    <a
+                        href="{{ url_for('admin.admin_transactions') }}"
+                        class="action-card"
+                    >
+                        <div class="action-icon">🧾</div>
+
+                        <div class="action-title">
+                            Transactions
+                        </div>
+
+                        <div class="action-description">
+                            View platform financial transaction history.
+                        </div>
+
+                        <span class="action-arrow">
+                            Open →
+                        </span>
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- CASH IN -->
+
+    <section class="section" id="cashIn">
+
+        <div class="section-header">
+
+            <div>
+                <div class="section-title">
+                    Pending Cash In
+                </div>
+
+                <div class="section-subtitle">
+                    Review user deposit requests.
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            {% if recent_cash_ins %}
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Reference</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for cash in recent_cash_ins %}
+
+                                <tr>
+
+                                    <td>
+                                        <div class="user-cell">
+                                            {{ cash.phone|default(cash.user_phone|default("Unknown")) }}
+                                        </div>
+
+                                        <div class="muted">
+                                            User #{{ cash.user_id|default("-") }}
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            {{ "{:,.0f}".format(cash.amount|default(0)) }}
+                                            Frw
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        {{ cash.reference|default(cash.transaction_reference|default("-")) }}
+                                    </td>
+
+                                    <td>
+
+                                        {% if cash.status == "Pending" %}
+
+                                            <span class="badge badge-pending">
+                                                Pending
+                                            </span>
+
+                                        {% elif cash.status == "Completed" %}
+
+                                            <span class="badge badge-completed">
+                                                Completed
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge badge-rejected">
+                                                {{ cash.status|default("Unknown") }}
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                    <td>
+                                        {{ cash.created_at|default("-") }}
+                                    </td>
+
+                                    <td>
+
+                                        {% if cash.status == "Pending" %}
+
+                                            <div class="button-row">
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ url_for('admin.complete_cash_in', cash_in_id=cash.id) }}"
+                                                    onsubmit="return confirm('Confirm this Cash In?');"
+                                                >
+
+                                                    <button
+                                                        type="submit"
+                                                        class="small-button button-complete"
+                                                    >
+                                                        Complete
+                                                    </button>
+
+                                                </form>
+
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ url_for('admin.reject_cash_in', cash_in_id=cash.id) }}"
+                                                    onsubmit="return confirm('Reject this Cash In?');"
+                                                >
+
+                                                    <button
+                                                        type="submit"
+                                                        class="small-button button-reject"
+                                                    >
+                                                        Reject
+                                                    </button>
+
+                                                </form>
+
+                                            </div>
+
+                                        {% else %}
+
+                                            <span class="muted">
+                                                Processed
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="empty">
+                    No Cash In requests found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- CASH OUT -->
+
+    <section class="section" id="cashOut">
+
+        <div class="section-header">
+
+            <div>
+                <div class="section-title">
+                    Pending Cash Out
+                </div>
+
+                <div class="section-subtitle">
+                    Review and process withdrawal requests.
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            {% if recent_cash_outs %}
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>User</th>
+                                <th>Amount</th>
+                                <th>Network</th>
+                                <th>Destination</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for cash in recent_cash_outs %}
+
+                                <tr>
+
+                                    <td>
+
+                                        <div class="user-cell">
+                                            {{ cash.phone|default(cash.user_phone|default("Unknown")) }}
+                                        </div>
+
+                                        <div class="muted">
+                                            User #{{ cash.user_id|default("-") }}
+                                        </div>
+
+                                    </td>
+
+
+                                    <td>
+                                        <strong>
+                                            {{ "{:,.0f}".format(cash.amount|default(0)) }}
+                                            Frw
+                                        </strong>
+                                    </td>
+
+
+                                    <td>
+                                        {{ cash.network|default("-") }}
+                                    </td>
+
+
+                                    <td>
+                                        {{ cash.destination_phone|default(cash.phone_number|default("-")) }}
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if cash.status == "Pending" %}
+
+                                            <span class="badge badge-pending">
+                                                Pending
+                                            </span>
+
+                                        {% elif cash.status == "Completed" %}
+
+                                            <span class="badge badge-completed">
+                                                Completed
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge badge-rejected">
+                                                {{ cash.status|default("Unknown") }}
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+
+                                    <td>
+                                        {{ cash.created_at|default("-") }}
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if cash.status == "Pending" %}
+
+                                            <div class="button-row">
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ url_for('admin.complete_cash_out', withdrawal_id=cash.id) }}"
+                                                    onsubmit="return confirm('Confirm that this Cash Out has been paid?');"
+                                                >
+
+                                                    <button
+                                                        type="submit"
+                                                        class="small-button button-complete"
+                                                    >
+                                                        Complete
+                                                    </button>
+
+                                                </form>
+
+
+                                                <form
+                                                    method="POST"
+                                                    action="{{ url_for('admin.reject_cash_out', withdrawal_id=cash.id) }}"
+                                                    onsubmit="return confirm('Reject and refund this Cash Out?');"
+                                                >
+
+                                                    <button
+                                                        type="submit"
+                                                        class="small-button button-reject"
+                                                    >
+                                                        Reject
+                                                    </button>
+
+                                                </form>
+
+                                            </div>
+
+                                        {% else %}
+
+                                            <span class="muted">
+                                                Processed
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="empty">
+                    No Cash Out requests found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- RECENT USERS -->
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <div>
+                <div class="section-title">
+                    Recent Users
+                </div>
+
+                <div class="section-subtitle">
+                    Latest registered accounts.
+                </div>
+            </div>
+
+            <a
+                href="{{ url_for('admin.admin_users') }}"
+                class="section-link"
+            >
+                View All →
+            </a>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="search-box">
+
+                <input
+                    type="text"
+                    id="userSearch"
+                    placeholder="Search phone number..."
+                    oninput="filterUsers()"
+                >
+
+            </div>
+
+
+            {% if recent_users %}
+
+                <div class="table-wrapper">
+
+                    <table id="usersTable">
+
+                        <thead>
+
+                            <tr>
+                                <th>User</th>
+                                <th>Saved</th>
+                                <th>Withdrawable</th>
+                                <th>Earned</th>
+                                <th>Withdrawn</th>
+                                <th>Status</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for user in recent_users %}
+
+                                <tr class="user-row">
+
+                                    <td>
+
+                                        <div class="user-cell">
+                                            {{ user.phone|default("-") }}
+                                        </div>
+
+                                        <div class="muted">
+                                            #{{ user.id|default("-") }}
+                                        </div>
+
+                                    </td>
+
+
+                                    <td>
+                                        {{ "{:,.0f}".format(user.saved_balance|default(0)) }}
+                                        Frw
+                                    </td>
+
+
+                                    <td>
+                                        {{ "{:,.0f}".format(user.withdrawable_balance|default(0)) }}
+                                        Frw
+                                    </td>
+
+
+                                    <td>
+                                        {{ "{:,.0f}".format(user.total_earned|default(0)) }}
+                                        Frw
+                                    </td>
+
+
+                                    <td>
+                                        {{ "{:,.0f}".format(user.total_withdrawn|default(0)) }}
+                                        Frw
+                                    </td>
+
+
+                                    <td>
+
+                                        {% if user.active|default(1) %}
+
+                                            <span class="badge badge-active">
+                                                Active
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge badge-inactive">
+                                                Inactive
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="empty">
+                    No users found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <!-- RECENT TRANSACTIONS -->
+
+    <section class="section">
+
+        <div class="section-header">
+
+            <div>
+                <div class="section-title">
+                    Recent Transactions
+                </div>
+
+                <div class="section-subtitle">
+                    Latest financial activity across KoraCash.
+                </div>
+            </div>
+
+            <a
+                href="{{ url_for('admin.admin_transactions') }}"
+                class="section-link"
+            >
+                View All →
+            </a>
+
+        </div>
+
+
+        <div class="panel">
+
+            {% if recent_transactions %}
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+
+                            <tr>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Description</th>
+                                <th>Date</th>
+                            </tr>
+
+                        </thead>
+
+                        <tbody>
+
+                            {% for transaction in recent_transactions %}
+
+                                <tr>
+
+                                    <td>
+                                        {{ transaction.phone|default(transaction.user_phone|default("-")) }}
+                                    </td>
+
+                                    <td>
+                                        <strong>
+                                            {{ transaction.type|default("-") }}
+                                        </strong>
+                                    </td>
+
+                                    <td>
+                                        {{ "{:,.0f}".format(transaction.amount|default(0)) }}
+                                        Frw
+                                    </td>
+
+                                    <td>
+
+                                        {% if transaction.status == "Completed" %}
+
+                                            <span class="badge badge-completed">
+                                                Completed
+                                            </span>
+
+                                        {% elif transaction.status == "Pending" %}
+
+                                            <span class="badge badge-pending">
+                                                Pending
+                                            </span>
+
+                                        {% else %}
+
+                                            <span class="badge badge-rejected">
+                                                {{ transaction.status|default("-") }}
+                                            </span>
+
+                                        {% endif %}
+
+                                    </td>
+
+                                    <td>
+                                        {{ transaction.description|default("-") }}
+                                    </td>
+
+                                    <td>
+                                        {{ transaction.created_at|default("-") }}
+                                    </td>
+
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <div class="empty">
+                    No transactions found.
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </section>
+
+
+    <div class="footer">
+        KoraCash Admin • Platform Management
+    </div>
+
+</main>
+
+
+<script>
+
+    /*
+     * USER SEARCH
+     */
+
+    function filterUsers() {
+
+        const input =
+            document.getElementById("userSearch");
+
+        const filter =
+            input.value.toLowerCase();
+
+        const rows =
+            document.querySelectorAll(
+                "#usersTable .user-row"
+            );
+
+        rows.forEach(function(row) {
+
+            const text =
+                row.textContent.toLowerCase();
+
+            if (text.includes(filter)) {
+                row.style.display = "";
+            } else {
+                row.style.display = "none";
+            }
+
+        });
+    }
+
+
+    /*
+     * AUTO HIDE FLASH MESSAGES
+     */
+
+    setTimeout(function() {
+
+        document
+            .querySelectorAll(".flash")
+            .forEach(function(element) {
+
+                element.style.transition =
+                    "opacity .4s ease";
+
+                element.style.opacity = "0";
+
+                setTimeout(function() {
+                    element.remove();
+                }, 500);
+
+            });
+
+    }, 5000);
+
+</script>
+
+</body>
+</html>

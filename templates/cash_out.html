@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Cash Out - KoraCash</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f8fb;
+            color: #102a43;
+            padding-bottom: 90px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #102a43, #176b87);
+            color: white;
+            padding: 22px 18px 32px;
+            border-radius: 0 0 28px 28px;
+        }
+
+        .header-inner {
+            max-width: 700px;
+            margin: auto;
+        }
+
+        .back {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .header h1 {
+            margin-top: 22px;
+            font-size: 27px;
+        }
+
+        .header p {
+            margin-top: 6px;
+            opacity: .88;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: -12px auto 0;
+            position: relative;
+            padding: 0 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 22px;
+            padding: 22px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 25px rgba(16,42,67,.08);
+        }
+
+        .balance-box {
+            background: #eef8ff;
+            border: 1px solid #d5ebf8;
+            border-radius: 17px;
+            padding: 17px;
+            margin-bottom: 20px;
+        }
+
+        .balance-label {
+            color: #718096;
+            font-size: 12px;
+        }
+
+        .balance-value {
+            margin-top: 5px;
+            font-size: 28px;
+            font-weight: 900;
+            color: #176b87;
+        }
+
+        .field {
+            margin-top: 17px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 7px;
+            color: #334e68;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #d9e2ec;
+            border-radius: 13px;
+            font-size: 15px;
+            outline: none;
+            background: white;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: #176b87;
+            box-shadow: 0 0 0 3px rgba(23,107,135,.1);
+        }
+
+        .networks {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .network-option {
+            position: relative;
+        }
+
+        .network-option input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .network-label {
+            display: block;
+            padding: 15px 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 14px;
+        }
+
+        .network-option input:checked + .network-label {
+            border-color: #008f83;
+            background: #eafff7;
+            color: #087443;
+        }
+
+        .withdraw-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #176b87, #102a43);
+            color: white;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .lock {
+            background: #fff8e6;
+            border: 1px solid #f3df9b;
+            color: #765500;
+            padding: 14px;
+            border-radius: 14px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .notice {
+            margin-top: 15px;
+            background: #f7fafc;
+            padding: 13px;
+            border-radius: 12px;
+            color: #718096;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 14px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .amount {
+            font-weight: 800;
+        }
+
+        .details {
+            color: #8a94a6;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .status {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 6px 9px;
+            border-radius: 20px;
+            height: fit-content;
+        }
+
+        .status.Pending {
+            background: #fff8e6;
+            color: #8a5a00;
+        }
+
+        .status.Completed {
+            background: #e8fff3;
+            color: #087443;
+        }
+
+        .status.Rejected {
+            background: #fff0f0;
+            color: #b42318;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 72px;
+            background: white;
+            border-top: 1px solid #e6edf3;
+            display: flex;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            width: 100%;
+            max-width: 700px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: #718096;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .nav-icon {
+            font-size: 21px;
+        }
+
+        .nav-item.active {
+            color: #176b87;
+        }
+
+        .flash {
+            max-width: 700px;
+            margin: 12px auto;
+            padding: 12px 15px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        .flash.success {
+            background: #e8fff3;
+            color: #087443;
+        }
+
+        .flash.danger {
+            background: #fff0f0;
+            color: #b42318;
+        }
+
+        .flash.warning {
+            background: #fff8e6;
+            color: #8a5a00;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="header">
+
+    <div class="header-inner">
+
+        <a href="{{ url_for('home') }}" class="back">
+            ← Home
+        </a>
+
+        <h1>Cash Out</h1>
+
+        <p>
+            Withdraw your eligible earnings.
+        </p>
+
+    </div>
+
+</header>
+
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+
+    {% if messages %}
+
+        {% for category, message in messages %}
+
+            <div class="flash {{ category }}">
+                {{ message }}
+            </div>
+
+        {% endfor %}
+
+    {% endif %}
+
+{% endwith %}
+
+
+<main class="container">
+
+    <div class="card">
+
+        <div class="balance-box">
+
+            <div class="balance-label">
+                Available to Withdraw
+            </div>
+
+            <div class="balance-value">
+                {{ "{:,}".format(user["withdrawable_balance"]) }}
+                Frw
+            </div>
+
+        </div>
+
+
+        {% if lock_until %}
+
+            <div class="lock">
+
+                🔒 <strong>Withdrawal temporarily locked.</strong>
+
+                <br>
+
+                Your next withdrawal will be available after:
+
+                <strong>
+                    {{ lock_until.strftime("%Y-%m-%d %H:%M") }}
+                </strong>
+
+                <br><br>
+
+                Saved money is never included in withdrawable funds.
+
+            </div>
+
+        {% endif %}
+
+
+        <form
+            method="POST"
+            action="{{ url_for('cash_out') }}"
+        >
+
+            <div class="field">
+
+                <label>
+                    Amount (Frw)
+                </label>
+
+                <input
+                    type="number"
+                    name="amount"
+                    min="1"
+                    placeholder="e.g. 1500"
+                    required
+                    {% if lock_until %}disabled{% endif %}
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Select Network
+                </label>
+
+                <div class="networks">
+
+                    <div class="network-option">
+
+                        <input
+                            type="radio"
+                            id="mtn"
+                            name="network"
+                            value="MTN"
+                            required
+                            {% if lock_until %}disabled{% endif %}
+                        >
+
+                        <label
+                            for="mtn"
+                            class="network-label"
+                        >
+                            🟡 MTN Rwanda
+                        </label>
+
+                    </div>
+
+
+                    <div class="network-option">
+
+                        <input
+                            type="radio"
+                            id="airtel"
+                            name="network"
+                            value="Airtel"
+                            {% if lock_until %}disabled{% endif %}
+                        >
+
+                        <label
+                            for="airtel"
+                            class="network-label"
+                        >
+                            🔴 Airtel Rwanda
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Destination Phone Number
+                </label>
+
+                <input
+                    type="tel"
+                    name="phone"
+                    placeholder="07XXXXXXXX"
+                    required
+                    {% if lock_until %}disabled{% endif %}
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="withdraw-btn"
+                {% if lock_until %}disabled{% endif %}
+            >
+                Withdraw Money
+            </button>
+
+        </form>
+
+
+        <div class="notice">
+
+            <strong>Important:</strong>
+            Saved money cannot be withdrawn.
+            Only your eligible withdrawable balance can be used.
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2 style="font-size:19px;margin-bottom:10px;">
+            Withdrawal History
+        </h2>
+
+        {% if withdrawals %}
+
+            {% for item in withdrawals %}
+
+                <div class="history-item">
+
+                    <div>
+
+                        <div class="amount">
+                            {{ "{:,}".format(item["amount"]) }} Frw
+                        </div>
+
+                        <div class="details">
+                            {{ item["network"] }}
+                            •
+                            {{ item["phone"] }}
+                            <br>
+                            {{ item["created_at"][:16].replace("T", " ") }}
+                        </div>
+
+                    </div>
+
+                    <span class="status {{ item['status'] }}">
+                        {{ item["status"] }}
+                    </span>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p style="color:#718096;font-size:13px;">
+                No withdrawal requests yet.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+</main>
+
+
+<nav class="bottom-nav">
+
+    <div class="nav-inner">
+
+        <a href="{{ url_for('home') }}" class="nav-item">
+            <span class="nav-icon">⌂</span>
+            <span>Home</span>
+        </a>
+
+        <a href="{{ url_for('cash_in') }}" class="nav-item">
+            <span class="nav-icon">＋</span>
+            <span>Cash In</span>
+        </a>
+
+        <a href="{{ url_for('cash_out') }}" class="nav-item active">
+            <span class="nav-icon">↗</span>
+            <span>Cash Out</span>
+        </a>
+
+        <a href="{{ url_for('profile') }}" class="nav-item">
+            <span class="nav-icon">◯</span>
+            <span>Profile</span>
+        </a>
+
+    </div>
+
+</nav>
+
+</body>
+</html>

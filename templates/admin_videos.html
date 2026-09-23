@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KoraCash - Videos</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
+header{background:#fff;border-bottom:1px solid #e5eaf0;padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:23px;font-weight:800;color:#1463ff}
+.back{color:#1463ff;text-decoration:none;font-weight:700}
+.container{width:min(1100px,94%);margin:25px auto}
+h1{font-size:25px;margin-bottom:5px}
+.subtitle{color:#667085;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.card{background:#fff;border:1px solid #e5eaf0;border-radius:18px;padding:20px}
+.top{display:flex;justify-content:space-between;gap:10px}
+.title{font-size:17px;font-weight:800}
+.badge{padding:6px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.active{background:#eafaf0;color:#16803c}
+.inactive{background:#fff0f0;color:#b42318}
+.desc{color:#667085;font-size:13px;line-height:1.5;margin:12px 0}
+.info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}
+.info div{background:#f7f9fc;padding:10px;border-radius:10px}
+.label{display:block;font-size:10px;color:#667085}
+.value{font-weight:700;font-size:13px;margin-top:4px}
+.watch{display:block;text-align:center;text-decoration:none;background:#172033;color:#fff;padding:11px;border-radius:10px;margin-bottom:10px;font-weight:700}
+button{width:100%;padding:11px;border:0;border-radius:10px;font-weight:700;cursor:pointer}
+.activate{background:#eafaf0;color:#16803c}
+.deactivate{background:#fff0f0;color:#b42318}
+@media(max-width:700px){.grid{grid-template-columns:1fr}.info{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">KoraCash Admin</div>
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="back">← Dashboard</a>
+</header>
+
+<main class="container">
+
+<h1>Video Library</h1>
+<div class="subtitle">
+    {{ videos|length }} videos available
+</div>
+
+<div class="grid">
+
+{% for video in videos %}
+
+<div class="card">
+
+    <div class="top">
+        <div class="title">{{ video.title }}</div>
+
+        {% if video.is_active %}
+            <span class="badge active">ACTIVE</span>
+        {% else %}
+            <span class="badge inactive">INACTIVE</span>
+        {% endif %}
+    </div>
+
+    <div class="desc">
+        {{ video.description }}
+    </div>
+
+    <div class="info">
+
+        <div>
+            <span class="label">Reward</span>
+            <span class="value">
+                {{ "{:,}".format(video.reward or 0) }} Frw
+            </span>
+        </div>
+
+        <div>
+            <span class="label">Duration</span>
+            <span class="value">
+                {{ video.duration_seconds or 0 }} sec
+            </span>
+        </div>
+
+        <div>
+            <span class="label">Category</span>
+            <span class="value">
+                {{ video.category or "General" }}
+            </span>
+        </div>
+
+    </div>
+
+    <div class="desc">
+        Source: {{ video.source or "Unknown" }}<br>
+        License: {{ video.license or "Unknown" }}
+    </div>
+
+    <a
+        href="{{ video.video_url }}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="watch"
+    >
+        ▶ Open Video
+    </a>
+
+    {% if video.is_active %}
+
+    <form method="POST"
+          action="{{ url_for('admin.toggle_video', video_id=video.id) }}">
+        <button class="deactivate">
+            Deactivate Video
+        </button>
+    </form>
+
+    {% else %}
+
+    <form method="POST"
+          action="{{ url_for('admin.toggle_video', video_id=video.id) }}">
+        <button class="activate">
+            Activate Video
+        </button>
+    </form>
+
+    {% endif %}
+
+</div>
+
+{% else %}
+
+<div class="card">
+    No videos found.
+</div>
+
+{% endfor %}
+
+</div>
+
+</main>
+
+</body>
+</html>

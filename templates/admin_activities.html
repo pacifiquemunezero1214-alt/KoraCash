@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KoraCash - Activities</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#f4f7fb;color:#172033}
+header{background:#fff;padding:16px 22px;border-bottom:1px solid #e5eaf0;display:flex;justify-content:space-between}
+.logo{font-size:22px;font-weight:800;color:#1463ff}
+a{text-decoration:none;color:#1463ff;font-weight:700}
+.container{width:min(1150px,94%);margin:25px auto}
+.card{background:#fff;border:1px solid #e5eaf0;border-radius:18px;overflow:hidden}
+.wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:850px}
+th,td{padding:13px 15px;border-bottom:1px solid #edf0f4;text-align:left;font-size:13px}
+th{background:#f8fafc;color:#667085}
+.done{color:#16803c;font-weight:700}
+.wait{color:#946200;font-weight:700}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">KoraCash Admin</div>
+<a href="{{ url_for('admin.admin_dashboard') }}">← Dashboard</a>
+</header>
+
+<main class="container">
+<h1>Daily Activities</h1>
+<p>Automatic user activity tracking</p>
+
+<div class="card">
+<div class="wrap">
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>User</th>
+<th>Date</th>
+<th>Video</th>
+<th>Task</th>
+<th>Video Reward</th>
+<th>Task Reward</th>
+</tr>
+</thead>
+
+<tbody>
+{% for activity in activities %}
+<tr>
+<td>#{{ activity.id }}</td>
+<td>{{ activity.phone }}</td>
+<td>{{ activity.activity_date }}</td>
+
+<td>
+{% if activity.video_completed %}
+<span class="done">✓ Completed</span>
+{% else %}
+<span class="wait">Pending</span>
+{% endif %}
+</td>
+
+<td>
+{% if activity.task_completed %}
+<span class="done">✓ Completed</span>
+{% else %}
+<span class="wait">Pending</span>
+{% endif %}
+</td>
+
+<td>
+{% if activity.video_rewarded %}
+<span class="done">✓ Rewarded</span>
+{% else %}
+-
+{% endif %}
+</td>
+
+<td>
+{% if activity.task_rewarded %}
+<span class="done">✓ Rewarded</span>
+{% else %}
+-
+{% endif %}
+</td>
+</tr>
+{% else %}
+<tr>
+<td colspan="7">No daily activities found.</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</body>
+</html>

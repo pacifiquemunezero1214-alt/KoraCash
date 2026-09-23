@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Help Center - KoraCash</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #17202a;
+            min-height: 100vh;
+            padding-bottom: 90px;
+        }
+
+        .topbar {
+            background: linear-gradient(135deg, #087f5b, #12b886);
+            color: white;
+            padding: 22px 18px 28px;
+            border-radius: 0 0 25px 25px;
+        }
+
+        .top-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .back {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.18);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+        }
+
+        .topbar h1 {
+            font-size: 21px;
+        }
+
+        .topbar p {
+            margin-top: 12px;
+            font-size: 13px;
+            opacity: .9;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 650px;
+            margin: 20px auto;
+        }
+
+        .search-box {
+            background: white;
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: 0 5px 18px rgba(0,0,0,.05);
+            margin-bottom: 18px;
+        }
+
+        .search-box input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            background: #f7f9fa;
+            padding: 13px;
+            border-radius: 12px;
+        }
+
+        .section-title {
+            font-size: 17px;
+            font-weight: 800;
+            margin: 18px 0 12px;
+        }
+
+        .faq {
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,.04);
+        }
+
+        .faq-question {
+            width: 100%;
+            border: none;
+            background: white;
+            padding: 17px;
+            text-align: left;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .arrow {
+            color: #087f5b;
+            font-size: 18px;
+            transition: transform .2s ease;
+        }
+
+        .faq-answer {
+            display: none;
+            padding: 0 17px 17px;
+            color: #66727c;
+            font-size: 13px;
+            line-height: 1.65;
+        }
+
+        .faq.open .faq-answer {
+            display: block;
+        }
+
+        .faq.open .arrow {
+            transform: rotate(180deg);
+        }
+
+        .contact-card {
+            background: linear-gradient(135deg, #087f5b, #12b886);
+            color: white;
+            border-radius: 20px;
+            padding: 22px;
+            margin-top: 22px;
+        }
+
+        .contact-card h2 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .contact-card p {
+            font-size: 13px;
+            line-height: 1.5;
+            opacity: .92;
+            margin-bottom: 16px;
+        }
+
+        .contact-btn {
+            display: inline-block;
+            background: white;
+            color: #087f5b;
+            padding: 12px 18px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
+            background: white;
+            border-top: 1px solid #e8ecef;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            z-index: 100;
+            box-shadow: 0 -5px 20px rgba(0,0,0,.06);
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: #7a8490;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        .nav-item.active {
+            color: #087f5b;
+        }
+
+        .no-result {
+            display: none;
+            text-align: center;
+            padding: 25px;
+            color: #7a8490;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div class="top-row">
+
+        <a href="{{ url_for('home') }}" class="back">
+            ←
+        </a>
+
+        <h1>Help Center</h1>
+
+    </div>
+
+    <p>
+        Find answers about Cash In, Cash Out, daily activities,
+        referrals and your KoraCash account.
+    </p>
+
+</header>
+
+
+<main class="container">
+
+    <div class="search-box">
+
+        <input
+            type="text"
+            id="faqSearch"
+            placeholder="Search your question..."
+            oninput="searchFAQ()"
+        >
+
+    </div>
+
+
+    <div class="section-title">
+        Frequently Asked Questions
+    </div>
+
+
+    <!-- CASH IN -->
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>How does Cash In work?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            Enter the amount you want to save and submit your Cash In
+            request. KoraCash will show the payment number
+            <strong>0798386664</strong>.
+            You can call the number using the Call Now button.
+            Your payment remains Pending until it is confirmed.
+        </div>
+
+    </div>
+
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>Can I withdraw my saved money?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            No. Money placed in your Saved Balance is protected and
+            cannot be withdrawn through Cash Out. Only eligible
+            withdrawable funds can be used for Cash Out.
+        </div>
+
+    </div>
+
+
+    <!-- CASH OUT -->
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>How does Cash Out work?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            Enter the amount you want to withdraw, choose your network
+            (MTN Rwanda or Airtel Rwanda), enter the destination phone
+            number and submit your request.
+            The request will have a status such as Pending,
+            Completed or Rejected.
+        </div>
+
+    </div>
+
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>Why can't I withdraw immediately?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            KoraCash may temporarily restrict Cash Out according to
+            the withdrawal rules. When a withdrawal lock is active,
+            the remaining time is shown on the Cash Out page.
+        </div>
+
+    </div>
+
+
+    <!-- DAILY ACTIVITIES -->
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>How do daily videos and tasks work?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            After you make a successful Cash In, daily activities
+            become available. Each day you can complete one video
+            and one task. Each eligible activity rewards
+            <strong>1,000 Frw</strong>, for a maximum of
+            <strong>2,000 Frw per day</strong>.
+        </div>
+
+    </div>
+
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>Why are my activities locked?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            Daily activities are locked until you have completed
+            a Cash In. This is part of the KoraCash activity rules.
+        </div>
+
+    </div>
+
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>Can I complete the same activity many times?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            No. Each user can receive the daily video and daily task
+            reward only once per day. The server checks completion
+            before giving a reward.
+        </div>
+
+    </div>
+
+
+    <!-- REFERRAL -->
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>How does the referral bonus work?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            Share your personal referral link with a new user.
+            When a new user registers using your referral link,
+            the referral reward is <strong>1,500 Frw</strong>,
+            subject to the KoraCash referral rules.
+        </div>
+
+    </div>
+
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>Can I refer myself?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            No. Self-referrals and duplicate referral attempts
+            are not eligible for the referral bonus.
+        </div>
+
+    </div>
+
+
+    <!-- ACCOUNT -->
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>How can I change my password?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            Open Profile, select Change Password, enter your current
+            password and your new password, then save the change.
+        </div>
+
+    </div>
+
+
+    <div class="faq">
+
+        <button class="faq-question" onclick="toggleFAQ(this)">
+            <span>Is my balance the same as my saved money?</span>
+            <span class="arrow">⌄</span>
+        </button>
+
+        <div class="faq-answer">
+            No. KoraCash separates Saved Balance from Withdrawable
+            Balance. Saved money is not included in the amount
+            available for Cash Out.
+        </div>
+
+    </div>
+
+
+    <div class="no-result" id="noResult">
+        No matching question found.
+    </div>
+
+
+    <!-- CONTACT -->
+
+    <section class="contact-card">
+
+        <h2>Need more help?</h2>
+
+        <p>
+            If your question is not answered here, contact the
+            KoraCash administration team for assistance.
+        </p>
+
+        <a
+            href="mailto:admin@koracash.com"
+            class="contact-btn"
+        >
+            ✉ Contact Admin
+        </a>
+
+    </section>
+
+</main>
+
+
+<nav class="bottom-nav">
+
+    <a href="{{ url_for('home') }}" class="nav-item">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+    </a>
+
+    <a href="{{ url_for('cash_in') }}" class="nav-item">
+        <span class="nav-icon">💰</span>
+        <span>Cash In</span>
+    </a>
+
+    <a href="{{ url_for('cash_out') }}" class="nav-item">
+        <span class="nav-icon">💸</span>
+        <span>Cash Out</span>
+    </a>
+
+    <a href="{{ url_for('profile') }}" class="nav-item active">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+    </a>
+
+</nav>
+
+
+<script>
+
+function toggleFAQ(button) {
+
+    const faq = button.parentElement;
+
+    faq.classList.toggle("open");
+
+}
+
+
+function searchFAQ() {
+
+    const search =
+        document.getElementById("faqSearch")
+            .value
+            .toLowerCase()
+            .trim();
+
+    const faqs =
+        document.querySelectorAll(".faq");
+
+    let visible = 0;
+
+    faqs.forEach(function(faq) {
+
+        const text =
+            faq.innerText.toLowerCase();
+
+        if (text.includes(search)) {
+
+            faq.style.display = "block";
+            visible++;
+
+        } else {
+
+            faq.style.display = "none";
+
+        }
+
+    });
+
+    const noResult =
+        document.getElementById("noResult");
+
+    if (visible === 0) {
+
+        noResult.style.display = "block";
+
+    } else {
+
+        noResult.style.display = "none";
+
+    }
+
+}
+
+</script>
+
+</body>
+</html>

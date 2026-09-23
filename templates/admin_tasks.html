@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KoraCash - Tasks</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#f4f7fb;color:#172033}
+header{background:#fff;padding:16px 22px;border-bottom:1px solid #e5eaf0;display:flex;justify-content:space-between}
+.logo{font-weight:800;font-size:22px;color:#1463ff}
+a{text-decoration:none;color:#1463ff;font-weight:700}
+.container{width:min(1100px,94%);margin:25px auto}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.card{background:#fff;border:1px solid #e5eaf0;border-radius:18px;padding:20px}
+.title{font-size:17px;font-weight:800}
+.meta{color:#667085;font-size:12px;margin:7px 0 14px}
+.desc{color:#667085;font-size:13px;line-height:1.5}
+.options{margin-top:15px;display:grid;gap:7px}
+.option{background:#f7f9fc;padding:10px;border-radius:9px;font-size:13px}
+.correct{border:1px solid #9bd7b1;background:#effbf3}
+.reward{margin:15px 0;font-weight:800;color:#16803c}
+button{width:100%;padding:11px;border:0;border-radius:10px;font-weight:700;cursor:pointer}
+.on{background:#fff0f0;color:#b42318}
+.off{background:#eafaf0;color:#16803c}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">KoraCash Admin</div>
+<a href="{{ url_for('admin.admin_dashboard') }}">← Dashboard</a>
+</header>
+
+<main class="container">
+
+<h1>Task Library</h1>
+<p>{{ tasks|length }} tasks available</p>
+
+<div class="grid">
+
+{% for task in tasks %}
+
+<div class="card">
+
+<div class="title">{{ task.title }}</div>
+
+<div class="meta">
+Category: {{ task.category or "General" }}
+|
+Reward: {{ "{:,}".format(task.reward or 0) }} Frw
+|
+{% if task.is_active %}ACTIVE{% else %}INACTIVE{% endif %}
+</div>
+
+<div class="desc">
+{{ task.description }}
+</div>
+
+<div class="options">
+
+<div class="option {% if task.correct_answer == 'A' %}correct{% endif %}">
+<strong>A.</strong> {{ task.option_a }}
+</div>
+
+<div class="option {% if task.correct_answer == 'B' %}correct{% endif %}">
+<strong>B.</strong> {{ task.option_b }}
+</div>
+
+<div class="option {% if task.correct_answer == 'C' %}correct{% endif %}">
+<strong>C.</strong> {{ task.option_c }}
+</div>
+
+<div class="option {% if task.correct_answer == 'D' %}correct{% endif %}">
+<strong>D.</strong> {{ task.option_d }}
+</div>
+
+</div>
+
+<form method="POST"
+      action="{{ url_for('admin.toggle_task', task_id=task.id) }}"
+      style="margin-top:15px">
+
+{% if task.is_active %}
+<button class="on">Deactivate Task</button>
+{% else %}
+<button class="off">Activate Task</button>
+{% endif %}
+
+</form>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</main>
+</body>
+</html>

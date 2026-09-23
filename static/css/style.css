@@ -1,0 +1,195 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    background: #f5f7fb;
+    color: #17202a;
+}
+
+button,
+input,
+select,
+textarea {
+    font-family: inherit;
+}
+
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    color: inherit;
+}
+
+img {
+    max-width: 100%;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.text-green {
+    color: #087f5b;
+}
+
+.text-muted {
+    color: #74808a;
+}
+
+.bg-green {
+    background: #087f5b;
+}
+
+/* Global scrollbar */
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f3f5;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #b8c2c8;
+    border-radius: 10px;
+}
+
+/* Buttons */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    border: none;
+    border-radius: 13px;
+
+    padding: 13px 18px;
+
+    font-weight: 700;
+    text-decoration: none;
+
+    transition:
+        transform .18s ease,
+        box-shadow .18s ease,
+        opacity .18s ease;
+}
+
+.btn:active {
+    transform: scale(.97);
+}
+
+.btn-primary {
+    background: linear-gradient(
+        135deg,
+        #087f5b,
+        #12b886
+    );
+
+    color: white;
+
+    box-shadow:
+        0 7px 18px rgba(8,127,91,.18);
+}
+
+.btn-primary:hover {
+    box-shadow:
+        0 10px 24px rgba(8,127,91,.25);
+}
+
+.btn-light {
+    background: #e9f7f2;
+    color: #087f5b;
+}
+
+/* Cards */
+
+.card {
+    background: white;
+    border-radius: 20px;
+
+    box-shadow:
+        0 6px 22px rgba(0,0,0,.05);
+}
+
+/* Form inputs */
+
+input,
+select,
+textarea {
+    outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: #12b886 !important;
+
+    box-shadow:
+        0 0 0 3px rgba(18,184,134,.10);
+}
+
+/* Loading */
+
+.loading {
+    opacity: .6;
+    pointer-events: none;
+}
+
+/* Small animation */
+
+@keyframes fadeUp {
+
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+}
+
+.fade-up {
+    animation: fadeUp .35s ease both;
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+
+    body {
+        overflow-x: hidden;
+    }
+
+    .btn {
+        min-height: 46px;
+    }
+
+}

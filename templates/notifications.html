@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Notifications - KoraCash</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #17202a;
+            min-height: 100vh;
+            padding-bottom: 90px;
+        }
+
+        .topbar {
+            background: linear-gradient(135deg, #087f5b, #12b886);
+            color: white;
+            padding: 22px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .back {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.18);
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+        }
+
+        .topbar h1 {
+            font-size: 21px;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 650px;
+            margin: 20px auto;
+        }
+
+        .notification {
+            background: white;
+            border-radius: 17px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 13px;
+            box-shadow: 0 5px 18px rgba(0,0,0,.05);
+        }
+
+        .icon {
+            width: 44px;
+            height: 44px;
+            min-width: 44px;
+            border-radius: 13px;
+            background: #e9f7f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+        }
+
+        .content {
+            flex: 1;
+        }
+
+        .content h3 {
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+
+        .content p {
+            color: #69747d;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .date {
+            margin-top: 7px;
+            color: #9aa3aa;
+            font-size: 11px;
+        }
+
+        .empty {
+            background: white;
+            border-radius: 20px;
+            padding: 45px 20px;
+            text-align: center;
+            box-shadow: 0 5px 18px rgba(0,0,0,.05);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty h2 {
+            font-size: 18px;
+            margin-bottom: 7px;
+        }
+
+        .empty p {
+            color: #7d8790;
+            font-size: 14px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
+            background: white;
+            border-top: 1px solid #e8ecef;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            z-index: 100;
+            box-shadow: 0 -5px 20px rgba(0,0,0,.06);
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: #7a8490;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        .nav-item.active {
+            color: #087f5b;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <a href="{{ url_for('home') }}" class="back">←</a>
+
+    <h1>Notifications</h1>
+
+</header>
+
+
+<main class="container">
+
+    {% if notifications %}
+
+        {% for notification in notifications %}
+
+            <div class="notification">
+
+                <div class="icon">
+                    {% if 'withdraw' in notification.message.lower() %}
+                        💸
+                    {% elif 'save' in notification.message.lower() %}
+                        💰
+                    {% elif 'reward' in notification.message.lower() %}
+                        🎁
+                    {% elif 'referral' in notification.message.lower() %}
+                        👥
+                    {% else %}
+                        🔔
+                    {% endif %}
+                </div>
+
+                <div class="content">
+
+                    <h3>
+                        KoraCash Notification
+                    </h3>
+
+                    <p>
+                        {{ notification.message }}
+                    </p>
+
+                    <div class="date">
+                        {{ notification.created_at }}
+                    </div>
+
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="empty">
+
+            <div class="empty-icon">
+                🔔
+            </div>
+
+            <h2>No notifications yet</h2>
+
+            <p>
+                Your KoraCash notifications will appear here.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</main>
+
+
+<nav class="bottom-nav">
+
+    <a href="{{ url_for('home') }}" class="nav-item">
+        <span class="nav-icon">🏠</span>
+        <span>Home</span>
+    </a>
+
+    <a href="{{ url_for('cash_in') }}" class="nav-item">
+        <span class="nav-icon">💰</span>
+        <span>Cash In</span>
+    </a>
+
+    <a href="{{ url_for('cash_out') }}" class="nav-item">
+        <span class="nav-icon">💸</span>
+        <span>Cash Out</span>
+    </a>
+
+    <a href="{{ url_for('profile') }}" class="nav-item">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+    </a>
+
+</nav>
+
+</body>
+</html>

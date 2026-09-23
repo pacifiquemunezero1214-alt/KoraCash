@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash In - KoraCash</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f8fb;
+            color: #102a43;
+            padding-bottom: 90px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #006f68, #008f83);
+            color: white;
+            padding: 22px 18px 30px;
+            border-radius: 0 0 28px 28px;
+        }
+
+        .header-inner {
+            max-width: 700px;
+            margin: auto;
+        }
+
+        .back {
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .header h1 {
+            margin-top: 22px;
+            font-size: 27px;
+        }
+
+        .header p {
+            margin-top: 6px;
+            opacity: .88;
+            font-size: 13px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: -12px auto 0;
+            position: relative;
+            padding: 0 15px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 22px;
+            padding: 22px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 25px rgba(16,42,67,.08);
+        }
+
+        .card h2 {
+            font-size: 19px;
+            margin-bottom: 7px;
+        }
+
+        .muted {
+            color: #718096;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .payment-box {
+            margin-top: 18px;
+            padding: 18px;
+            border-radius: 17px;
+            background: #eafff7;
+            border: 1px solid #bcefdc;
+            text-align: center;
+        }
+
+        .payment-label {
+            color: #567;
+            font-size: 12px;
+        }
+
+        .payment-number {
+            margin: 7px 0;
+            font-size: 28px;
+            font-weight: 900;
+            color: #087443;
+            letter-spacing: 1px;
+        }
+
+        .call-btn {
+            display: inline-block;
+            margin-top: 7px;
+            padding: 11px 18px;
+            background: #087443;
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .field {
+            margin-top: 18px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 7px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #334e68;
+        }
+
+        .field input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #d9e2ec;
+            border-radius: 13px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .field input:focus {
+            border-color: #008f83;
+            box-shadow: 0 0 0 3px rgba(0,143,131,.1);
+        }
+
+        .save-btn {
+            width: 100%;
+            margin-top: 18px;
+            padding: 15px;
+            border: 0;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #008f83, #006f68);
+            color: white;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .notice {
+            margin-top: 15px;
+            padding: 13px;
+            border-radius: 12px;
+            background: #fff8e6;
+            color: #765500;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 0;
+            border-bottom: 1px solid #edf2f7;
+        }
+
+        .history-item:last-child {
+            border-bottom: 0;
+        }
+
+        .history-amount {
+            font-weight: 800;
+        }
+
+        .history-date {
+            color: #8a94a6;
+            font-size: 11px;
+            margin-top: 4px;
+        }
+
+        .status {
+            font-size: 11px;
+            font-weight: 800;
+            padding: 6px 9px;
+            border-radius: 20px;
+        }
+
+        .status.Pending {
+            background: #fff8e6;
+            color: #8a5a00;
+        }
+
+        .status.Confirmed {
+            background: #e8fff3;
+            color: #087443;
+        }
+
+        .status.Rejected {
+            background: #fff0f0;
+            color: #b42318;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 72px;
+            background: white;
+            border-top: 1px solid #e6edf3;
+            display: flex;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            width: 100%;
+            max-width: 700px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: #718096;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .nav-icon {
+            font-size: 21px;
+        }
+
+        .nav-item.active {
+            color: #008f83;
+        }
+
+        .flash {
+            max-width: 700px;
+            margin: 12px auto;
+            padding: 12px 15px;
+            border-radius: 12px;
+            font-size: 13px;
+        }
+
+        .flash.success {
+            background: #e8fff3;
+            color: #087443;
+        }
+
+        .flash.danger {
+            background: #fff0f0;
+            color: #b42318;
+        }
+
+        .flash.warning {
+            background: #fff8e6;
+            color: #8a5a00;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="header">
+    <div class="header-inner">
+        <a href="{{ url_for('home') }}" class="back">← Home</a>
+
+        <h1>Cash In</h1>
+
+        <p>
+            Save money securely and unlock your daily activities.
+        </p>
+    </div>
+</header>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<main class="container">
+
+    <div class="card">
+
+        <h2>Make a Cash In</h2>
+
+        <p class="muted">
+            Enter the amount you want to save, then make payment
+            using the KoraCash payment number below.
+        </p>
+
+        <div class="payment-box">
+
+            <div class="payment-label">
+                Payment Number
+            </div>
+
+            <div class="payment-number">
+                {{ payment_number }}
+            </div>
+
+            <a
+                href="tel:{{ payment_number }}"
+                class="call-btn"
+            >
+                📞 Call Now
+            </a>
+
+        </div>
+
+        <form
+            method="POST"
+            action="{{ url_for('cash_in') }}"
+        >
+
+            <div class="field">
+
+                <label>
+                    Amount to Save (Frw)
+                </label>
+
+                <input
+                    type="number"
+                    name="amount"
+                    min="100"
+                    step="100"
+                    placeholder="e.g. 3000"
+                    required
+                >
+
+            </div>
+
+            <button
+                type="submit"
+                class="save-btn"
+            >
+                Save Money
+            </button>
+
+        </form>
+
+        <div class="notice">
+            Your payment request will remain
+            <strong>Pending</strong> until it is confirmed.
+            Calling the payment number does not automatically
+            confirm your payment.
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <h2>Cash In History</h2>
+
+        {% if cash_ins %}
+
+            {% for item in cash_ins %}
+
+                <div class="history-item">
+
+                    <div>
+
+                        <div class="history-amount">
+                            {{ "{:,}".format(item["amount"]) }} Frw
+                        </div>
+
+                        <div class="history-date">
+                            {{ item["created_at"][:16].replace("T", " ") }}
+                        </div>
+
+                    </div>
+
+                    <span class="status {{ item['status'] }}">
+                        {{ item["status"] }}
+                    </span>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="muted">
+                No Cash In transactions yet.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+</main>
+
+
+<nav class="bottom-nav">
+
+    <div class="nav-inner">
+
+        <a href="{{ url_for('home') }}" class="nav-item">
+            <span class="nav-icon">⌂</span>
+            <span>Home</span>
+        </a>
+
+        <a href="{{ url_for('cash_in') }}" class="nav-item active">
+            <span class="nav-icon">＋</span>
+            <span>Cash In</span>
+        </a>
+
+        <a href="{{ url_for('cash_out') }}" class="nav-item">
+            <span class="nav-icon">↗</span>
+            <span>Cash Out</span>
+        </a>
+
+        <a href="{{ url_for('profile') }}" class="nav-item">
+            <span class="nav-icon">◯</span>
+            <span>Profile</span>
+        </a>
+
+    </div>
+
+</nav>
+
+</body>
+</html>
