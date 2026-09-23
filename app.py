@@ -1083,7 +1083,7 @@ def choose_daily_video(conn, user_id, date_value):
             FROM daily_activities
             WHERE user_id = ?
             AND video_id IS NOT NULL
-            AND activity_date >= date(?, ?)
+            AND CAST(activity_date AS DATE) >= CAST(? AS DATE) + CAST(? AS INTERVAL)
         )
 
         ORDER BY RANDOM()
@@ -1145,7 +1145,7 @@ def choose_daily_task(conn, user_id, date_value):
             FROM daily_activities
             WHERE user_id = ?
             AND task_id IS NOT NULL
-            AND activity_date >= date(?, ?)
+            AND CAST(activity_date AS DATE) >= CAST(? AS DATE) + CAST(? AS INTERVAL)
         )
 
         ORDER BY RANDOM()
