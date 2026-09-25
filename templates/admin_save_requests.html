@@ -1,0 +1,350 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Save Requests - KoraCash Admin</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #172033;
+        }
+
+        .topbar {
+            background: #0b5ed7;
+            color: white;
+            padding: 18px 20px;
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 22px;
+        }
+
+        .topbar p {
+            margin: 5px 0 0;
+            opacity: .9;
+            font-size: 14px;
+        }
+
+        .container {
+            width: min(1100px, 94%);
+            margin: 25px auto;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 18px;
+            text-decoration: none;
+            color: #0b5ed7;
+            font-weight: bold;
+        }
+
+        .card {
+            background: white;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 18px rgba(0,0,0,.07);
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .request-header h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 11px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .completed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .rejected {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .detail {
+            background: #f7f9fc;
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .label {
+            display: block;
+            font-size: 12px;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .value {
+            font-weight: bold;
+        }
+
+        .proof {
+            margin-top: 15px;
+        }
+
+        .proof h3 {
+            margin: 0 0 10px;
+            font-size: 15px;
+        }
+
+        .proof img {
+            width: 100%;
+            max-width: 420px;
+            max-height: 600px;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            background: #fafafa;
+        }
+
+        .no-proof {
+            padding: 14px;
+            background: #fff3cd;
+            border-radius: 10px;
+            color: #856404;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .actions form {
+            margin: 0;
+        }
+
+        button {
+            border: 0;
+            border-radius: 9px;
+            padding: 11px 18px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .approve {
+            background: #198754;
+            color: white;
+        }
+
+        .reject {
+            background: #dc3545;
+            color: white;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    <h1>Save Requests</h1>
+    <p>KoraCash Admin — Manual MoMo Payment Review</p>
+</div>
+
+<div class="container">
+
+    <a class="back" href="{{ url_for('index') }}">
+        ← Back to Admin Dashboard
+    </a>
+
+    {% if save_requests %}
+
+        {% for request in save_requests %}
+
+        <div class="card">
+
+            <div class="request-header">
+
+                <h2>
+                    Save Request #{{ request.id }}
+                </h2>
+
+                {% set status = (request.status or '')|lower %}
+
+                <span class="status
+                    {% if status == 'pending' %}
+                        pending
+                    {% elif status == 'completed' %}
+                        completed
+                    {% elif status == 'rejected' %}
+                        rejected
+                    {% endif %}
+                ">
+                    {{ request.status }}
+                </span>
+
+            </div>
+
+            <div class="details">
+
+                <div class="detail">
+                    <span class="label">User Phone</span>
+                    <span class="value">
+                        {{ request.user_phone }}
+                    </span>
+                </div>
+
+                <div class="detail">
+                    <span class="label">Amount</span>
+                    <span class="value">
+                        {{ "{:,}".format(request.amount or 0) }} Frw
+                    </span>
+                </div>
+
+                <div class="detail">
+                    <span class="label">Save Plan</span>
+                    <span class="value">
+                        Plan {{ "{:,}".format(request.save_plan or request.amount or 0) }}
+                    </span>
+                </div>
+
+                <div class="detail">
+                    <span class="label">Payment Number</span>
+                    <span class="value">
+                        {{ request.payment_number }}
+                    </span>
+                </div>
+
+                <div class="detail">
+                    <span class="label">Submitted</span>
+                    <span class="value">
+                        {{ request.created_at }}
+                    </span>
+                </div>
+
+                {% if request.confirmed_at %}
+                <div class="detail">
+                    <span class="label">Confirmed</span>
+                    <span class="value">
+                        {{ request.confirmed_at }}
+                    </span>
+                </div>
+                {% endif %}
+
+            </div>
+
+            <div class="proof">
+
+                <h3>📸 MoMo Payment Proof</h3>
+
+                {% if request.payment_proof %}
+
+                    <img
+                        src="{{ url_for(
+                            'static',
+                            filename='uploads/payment_proofs/' ~ request.payment_proof
+                        ) }}"
+                        alt="MoMo payment proof"
+                    >
+
+                {% else %}
+
+                    <div class="no-proof">
+                        No payment screenshot uploaded.
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+            {% if status == 'pending' %}
+
+            <div class="actions">
+
+                <form
+                    method="POST"
+                    action="{{ url_for(
+                        'approve_cash_in',
+                        cash_in_id=request.id
+                    ) }}"
+                    onsubmit="return confirm('Approve this Save request?');"
+                >
+                    <button
+                        type="submit"
+                        class="approve"
+                    >
+                        ✓ Approve Save
+                    </button>
+                </form>
+
+                <form
+                    method="POST"
+                    action="{{ url_for(
+                        'reject_cash_in',
+                        cash_in_id=request.id
+                    ) }}"
+                    onsubmit="return confirm('Reject this Save request?');"
+                >
+                    <button
+                        type="submit"
+                        class="reject"
+                    >
+                        ✕ Reject Save
+                    </button>
+                </form>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="card empty">
+            No Save requests found.
+        </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>

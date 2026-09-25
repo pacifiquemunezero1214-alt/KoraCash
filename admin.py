@@ -434,7 +434,6 @@ def admin_dashboard():
                 total_users - active_users
             )
 
-
         # ----------------------------------------------------
         # USER BALANCES
         # ----------------------------------------------------
@@ -501,7 +500,6 @@ def admin_dashboard():
                 ).fetchone()
             )
 
-
         # ----------------------------------------------------
         # CASH IN
         # ----------------------------------------------------
@@ -554,7 +552,6 @@ def admin_dashboard():
                 ).fetchone()
             )
 
-
         # ----------------------------------------------------
         # CASH OUT
         # ----------------------------------------------------
@@ -606,7 +603,6 @@ def admin_dashboard():
                     """
                 ).fetchone()
             )
-
 
         # ----------------------------------------------------
         # REFERRALS
@@ -703,7 +699,6 @@ def admin_dashboard():
                 ).fetchone()
             )
 
-
         # ----------------------------------------------------
         # VIDEOS
         # ----------------------------------------------------
@@ -736,7 +731,6 @@ def admin_dashboard():
                     """
                 ).fetchone()
             )
-
 
         # ----------------------------------------------------
         # TASKS
@@ -771,7 +765,6 @@ def admin_dashboard():
                 ).fetchone()
             )
 
-
         # ----------------------------------------------------
         # RECENT USERS
         # ----------------------------------------------------
@@ -794,7 +787,6 @@ def admin_dashboard():
                     """
                 ).fetchall()
             )
-
 
         # ----------------------------------------------------
         # RECENT CASH IN
@@ -823,7 +815,6 @@ def admin_dashboard():
                 ).fetchall()
             )
 
-
         # ----------------------------------------------------
         # RECENT CASH OUT
         # ----------------------------------------------------
@@ -850,7 +841,6 @@ def admin_dashboard():
                     """
                 ).fetchall()
             )
-
 
         # ----------------------------------------------------
         # RECENT TRANSACTIONS
@@ -882,7 +872,6 @@ def admin_dashboard():
     finally:
 
         conn.close()
-
 
     return render_template(
         "admin_dashboard.html",
@@ -1258,33 +1247,15 @@ def complete_cash_out(withdrawal_id):
 
             if transaction:
 
-                if column_exists(
+                execute_db(
                     conn,
-                    "transactions",
-                    "transaction_type"
-                ):
-
-                    execute_db(
-                        conn,
-                        """
-                        UPDATE transactions
-                        SET status='Completed'
-                        WHERE id=?
-                        """,
-                        (transaction["id"],)
-                    )
-
-                else:
-
-                    execute_db(
-                        conn,
-                        """
-                        UPDATE transactions
-                        SET status='Completed'
-                        WHERE id=?
-                        """,
-                        (transaction["id"],)
-                    )
+                    """
+                    UPDATE transactions
+                    SET status='Completed'
+                    WHERE id=?
+                    """,
+                    (transaction["id"],)
+                )
 
         if table_exists(
             conn,
@@ -1794,9 +1765,6 @@ def admin_transactions():
     finally:
 
         conn.close()
-
-    # This template may not exist in the current
-    # repository, so return safely if unavailable.
 
     try:
 
@@ -2370,24 +2338,68 @@ def approve_task_submission(
                 )
             )
 
-        task = execute_db(
+        # ----------------------------------------------------
+        # PLAN-BASED TASK REWARD
+        # ----------------------------------------------------
+        # Plan 3,000 = 300 Frw
+        # Plan 6,000 = 600 Frw
+        #
+        # We intentionally do NOT use tasks.reward here because
+        # old database task records may still contain 1,000 Frw.
+        # ----------------------------------------------------
+
+        user = execute_db(
             conn,
             """
-            SELECT *
-            FROM tasks
+            SELECT save_plan
+            FROM users
             WHERE id=?
             LIMIT 1
             """,
-            (submission["task_id"],)
+            (submission["user_id"],)
         ).fetchone()
 
-        reward = 1000
+        plan = 0
 
-        if task and task["reward"]:
+        if user and user["save_plan"]:
 
-            reward = int(
-                task["reward"]
+            try:
+
+                plan = int(
+                    user["save_plan"]
+                )
+
+            except (
+                TypeError,
+                ValueError
+            ):
+
+                plan = 0
+
+        if plan == 6000:
+
+            reward = 600
+
+        elif plan == 3000:
+
+            reward = 300
+
+        else:
+
+            flash(
+                "User does not have a valid savings plan.",
+                "error"
             )
+
+            return redirect(
+                url_for(
+                    "admin.admin_task_submissions"
+                )
+            )
+
+        # ----------------------------------------------------
+        # APPROVE SUBMISSION
+        # ----------------------------------------------------
 
         execute_db(
             conn,
@@ -2400,6 +2412,10 @@ def approve_task_submission(
             """,
             (submission_id,)
         )
+
+        # ----------------------------------------------------
+        # ADD REWARD TO USER
+        # ----------------------------------------------------
 
         execute_db(
             conn,
@@ -2426,6 +2442,10 @@ def approve_task_submission(
                 submission["user_id"]
             )
         )
+
+        # ----------------------------------------------------
+        # CREATE TASK REWARD TRANSACTION
+        # ----------------------------------------------------
 
         if table_exists(
             conn,
@@ -2500,7 +2520,11 @@ def approve_task_submission(
                             "TASK_REWARD",
                             reward,
                             "Completed",
-                            f"Task reward - submission {submission_id}",
+                            (
+                                f"Task reward - "
+                                f"submission {submission_id} "
+                                f"- Plan {plan:,}"
+                            ),
                             now_iso()
                         )
                     )
@@ -2527,10 +2551,18 @@ def approve_task_submission(
                             "TASK_REWARD",
                             reward,
                             "Completed",
-                            f"Task reward - submission {submission_id}",
+                            (
+                                f"Task reward - "
+                                f"submission {submission_id} "
+                                f"- Plan {plan:,}"
+                            ),
                             now_iso()
                         )
                     )
+
+        # ----------------------------------------------------
+        # NOTIFICATION
+        # ----------------------------------------------------
 
         if table_exists(
             conn,
@@ -2554,7 +2586,11 @@ def approve_task_submission(
                 (
                     submission["user_id"],
                     "Task Approved",
-                    f"Your task was approved. You earned {reward:,} Frw.",
+                    (
+                        f"Your task was approved. "
+                        f"You earned {reward:,} Frw "
+                        f"from Plan {plan:,}."
+                    ),
                     now_iso()
                 )
             )

@@ -1,482 +1,486 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>KoraCash</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+<title>KoraCash</title>
 
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f4f7fb;
-            color: #172033;
-            padding-bottom: 90px;
-        }
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
 
-        .topbar {
-            background: #ffffff;
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #e6eaf0;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f4f7fb;
+        color: #172033;
+        padding-bottom: 90px;
+    }
 
-        .brand {
-            font-size: 24px;
-            font-weight: 800;
-            color: #1463ff;
-        }
+    .topbar {
+        background: #ffffff;
+        padding: 16px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #e6eaf0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
 
-        .welcome {
-            font-size: 13px;
-            color: #6b7280;
-            margin-top: 3px;
-        }
+    .brand {
+        font-size: 24px;
+        font-weight: 800;
+        color: #1463ff;
+    }
 
-        .notification {
-            position: relative;
-            text-decoration: none;
-            font-size: 23px;
-            color: #172033;
-        }
+    .welcome {
+        font-size: 13px;
+        color: #6b7280;
+        margin-top: 3px;
+    }
 
-        .notification-count {
-            position: absolute;
-            top: -7px;
-            right: -8px;
-            min-width: 18px;
-            height: 18px;
-            background: #ef4444;
-            color: white;
-            border-radius: 50%;
-            font-size: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-        }
+    .notification {
+        position: relative;
+        text-decoration: none;
+        font-size: 23px;
+        color: #172033;
+    }
 
-        .container {
-            width: min(1100px, 94%);
-            margin: 22px auto;
-        }
+    .notification-count {
+        position: absolute;
+        top: -7px;
+        right: -8px;
+        min-width: 18px;
+        height: 18px;
+        background: #ef4444;
+        color: white;
+        border-radius: 50%;
+        font-size: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+    }
 
-        .balance-card {
-            background: linear-gradient(135deg, #1463ff, #1747b8);
-            color: white;
-            border-radius: 22px;
-            padding: 24px;
-            box-shadow: 0 12px 30px rgba(20, 99, 255, .18);
-            margin-bottom: 18px;
-        }
+    .container {
+        width: min(1100px, 94%);
+        margin: 22px auto;
+    }
 
-        .balance-label {
-            font-size: 14px;
-            opacity: .85;
-        }
+    .balance-card {
+        background: linear-gradient(135deg, #1463ff, #1747b8);
+        color: white;
+        border-radius: 22px;
+        padding: 24px;
+        box-shadow: 0 12px 30px rgba(20, 99, 255, .18);
+        margin-bottom: 18px;
+    }
 
-        .balance-value {
-            font-size: 34px;
-            font-weight: 800;
-            margin: 8px 0;
-        }
+    .balance-label {
+        font-size: 14px;
+        opacity: .85;
+    }
 
-        .balance-note {
-            font-size: 13px;
-            opacity: .85;
-        }
+    .balance-value {
+        font-size: 34px;
+        font-weight: 800;
+        margin: 8px 0;
+    }
 
+    .balance-note {
+        font-size: 13px;
+        opacity: .85;
+    }
+
+    .cards {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 25px;
+    }
+
+    .card {
+        background: white;
+        border-radius: 16px;
+        padding: 18px;
+        border: 1px solid #e7ebf2;
+    }
+
+    .card-title {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 8px;
+    }
+
+    .card-value {
+        font-size: 21px;
+        font-weight: 800;
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 800;
+        margin: 25px 0 13px;
+    }
+
+    .activity-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px;
+    }
+
+    .activity-card {
+        background: white;
+        border-radius: 20px;
+        padding: 20px;
+        border: 1px solid #e5eaf1;
+        box-shadow: 0 7px 20px rgba(0,0,0,.04);
+    }
+
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .activity-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 13px;
+        background: #edf4ff;
+        color: #1463ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 21px;
+    }
+
+    .activity-name {
+        flex: 1;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .reward {
+        background: #eafaf0;
+        color: #16803c;
+        padding: 7px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .description {
+        color: #667085;
+        font-size: 14px;
+        line-height: 1.55;
+        margin-bottom: 15px;
+    }
+
+    .video-box {
+        background: #f7f9fc;
+        border: 1px solid #e8edf4;
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 14px;
+    }
+
+    .video-link {
+        display: block;
+        text-decoration: none;
+        background: #172033;
+        color: white;
+        border-radius: 12px;
+        padding: 15px;
+        text-align: center;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .timer {
+        text-align: center;
+        color: #667085;
+        font-size: 13px;
+    }
+
+    .progress {
+        height: 8px;
+        background: #e7ebf1;
+        border-radius: 20px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+
+    .progress-bar {
+        width: 0%;
+        height: 100%;
+        background: #1463ff;
+        transition: width .5s;
+    }
+
+    .question {
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.5;
+        margin-bottom: 15px;
+    }
+
+    .choices {
+        display: grid;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .choice {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px;
+        border: 1px solid #dfe5ed;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: .2s;
+        background: white;
+    }
+
+    .choice:hover {
+        border-color: #1463ff;
+        background: #f5f8ff;
+    }
+
+    .choice input {
+        accent-color: #1463ff;
+    }
+
+    .choice-letter {
+        width: 29px;
+        height: 29px;
+        border-radius: 8px;
+        background: #edf2f8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 800;
+        font-size: 12px;
+    }
+
+    .btn {
+        width: 100%;
+        border: none;
+        border-radius: 12px;
+        padding: 13px 16px;
+        font-size: 14px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .btn-primary {
+        background: #1463ff;
+        color: white;
+    }
+
+    .btn-primary:disabled {
+        background: #aeb8c8;
+        cursor: not-allowed;
+    }
+
+    .status {
+        padding: 12px;
+        border-radius: 12px;
+        font-size: 13px;
+        margin-top: 12px;
+        display: none;
+    }
+
+    .status.success {
+        display: block;
+        background: #eafaf0;
+        color: #137333;
+    }
+
+    .status.error {
+        display: block;
+        background: #fff0f0;
+        color: #b42318;
+    }
+
+    .completed {
+        border: 1px solid #b9e7ca;
+        background: #f3fff7;
+    }
+
+    .completed-badge {
+        background: #16803c;
+        color: white;
+        padding: 7px 10px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .quick-links {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-top: 15px;
+    }
+
+    .quick-link {
+        background: white;
+        border: 1px solid #e4e9f0;
+        border-radius: 15px;
+        padding: 16px 10px;
+        text-decoration: none;
+        color: #172033;
+        text-align: center;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .quick-icon {
+        display: block;
+        font-size: 21px;
+        margin-bottom: 7px;
+    }
+
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 72px;
+        background: white;
+        border-top: 1px solid #e4e8ef;
+        display: flex;
+        justify-content: center;
+        z-index: 200;
+    }
+
+    .nav-inner {
+        width: min(700px, 100%);
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+        padding: 8px;
+    }
+
+    .nav-item {
+        text-decoration: none;
+        color: #667085;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .nav-item span {
+        font-size: 19px;
+        margin-bottom: 3px;
+    }
+
+    .nav-item.active {
+        color: #1463ff;
+        background: #eef4ff;
+    }
+
+    .flash {
+        padding: 13px 15px;
+        border-radius: 12px;
+        background: #fff8e6;
+        color: #8a5a00;
+        margin-bottom: 15px;
+        font-size: 13px;
+    }
+
+    .empty {
+        background: white;
+        padding: 25px;
+        border-radius: 18px;
+        text-align: center;
+        color: #667085;
+    }
+
+    @media (max-width: 850px) {
         .cards {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 16px;
-            padding: 18px;
-            border: 1px solid #e7ebf2;
-        }
-
-        .card-title {
-            font-size: 12px;
-            color: #6b7280;
-            margin-bottom: 8px;
-        }
-
-        .card-value {
-            font-size: 21px;
-            font-weight: 800;
-        }
-
-        .section-title {
-            font-size: 20px;
-            font-weight: 800;
-            margin: 25px 0 13px;
+            grid-template-columns: repeat(2, 1fr);
         }
 
         .activity-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 18px;
-        }
-
-        .activity-card {
-            background: white;
-            border-radius: 20px;
-            padding: 20px;
-            border: 1px solid #e5eaf1;
-            box-shadow: 0 7px 20px rgba(0,0,0,.04);
-        }
-
-        .activity-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .activity-icon {
-            width: 44px;
-            height: 44px;
-            border-radius: 13px;
-            background: #edf4ff;
-            color: #1463ff;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 21px;
-        }
-
-        .activity-name {
-            flex: 1;
-            font-size: 17px;
-            font-weight: 800;
-        }
-
-        .reward {
-            background: #eafaf0;
-            color: #16803c;
-            padding: 7px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .description {
-            color: #667085;
-            font-size: 14px;
-            line-height: 1.55;
-            margin-bottom: 15px;
-        }
-
-        .video-box {
-            background: #f7f9fc;
-            border: 1px solid #e8edf4;
-            border-radius: 14px;
-            padding: 14px;
-            margin-bottom: 14px;
-        }
-
-        .video-link {
-            display: block;
-            text-decoration: none;
-            background: #172033;
-            color: white;
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
-
-        .timer {
-            text-align: center;
-            color: #667085;
-            font-size: 13px;
-        }
-
-        .progress {
-            height: 8px;
-            background: #e7ebf1;
-            border-radius: 20px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background: #1463ff;
-            transition: width .5s;
-        }
-
-        .question {
-            font-size: 15px;
-            font-weight: 700;
-            line-height: 1.5;
-            margin-bottom: 15px;
-        }
-
-        .choices {
-            display: grid;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .choice {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 13px;
-            border: 1px solid #dfe5ed;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: .2s;
-            background: white;
-        }
-
-        .choice:hover {
-            border-color: #1463ff;
-            background: #f5f8ff;
-        }
-
-        .choice input {
-            accent-color: #1463ff;
-        }
-
-        .choice-letter {
-            width: 29px;
-            height: 29px;
-            border-radius: 8px;
-            background: #edf2f8;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: 800;
-            font-size: 12px;
-        }
-
-        .btn {
-            width: 100%;
-            border: none;
-            border-radius: 12px;
-            padding: 13px 16px;
-            font-size: 14px;
-            font-weight: 800;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: #1463ff;
-            color: white;
-        }
-
-        .btn-primary:disabled {
-            background: #aeb8c8;
-            cursor: not-allowed;
-        }
-
-        .status {
-            padding: 12px;
-            border-radius: 12px;
-            font-size: 13px;
-            margin-top: 12px;
-            display: none;
-        }
-
-        .status.success {
-            display: block;
-            background: #eafaf0;
-            color: #137333;
-        }
-
-        .status.error {
-            display: block;
-            background: #fff0f0;
-            color: #b42318;
-        }
-
-        .completed {
-            border: 1px solid #b9e7ca;
-            background: #f3fff7;
-        }
-
-        .completed-badge {
-            background: #16803c;
-            color: white;
-            padding: 7px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
+            grid-template-columns: 1fr;
         }
 
         .quick-links {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 520px) {
+        .container {
+            width: 94%;
             margin-top: 15px;
         }
 
-        .quick-link {
-            background: white;
-            border: 1px solid #e4e9f0;
-            border-radius: 15px;
-            padding: 16px 10px;
-            text-decoration: none;
-            color: #172033;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        .quick-icon {
-            display: block;
-            font-size: 21px;
-            margin-bottom: 7px;
-        }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 72px;
-            background: white;
-            border-top: 1px solid #e4e8ef;
-            display: flex;
-            justify-content: center;
-            z-index: 200;
-        }
-
-        .nav-inner {
-            width: min(700px, 100%);
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 5px;
-            padding: 8px;
-        }
-
-        .nav-item {
-            text-decoration: none;
-            color: #667085;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .nav-item span {
-            font-size: 19px;
-            margin-bottom: 3px;
-        }
-
-        .nav-item.active {
-            color: #1463ff;
-            background: #eef4ff;
-        }
-
-        .flash {
+        .topbar {
             padding: 13px 15px;
-            border-radius: 12px;
-            background: #fff8e6;
-            color: #8a5a00;
-            margin-bottom: 15px;
-            font-size: 13px;
         }
 
-        .empty {
-            background: white;
-            padding: 25px;
+        .brand {
+            font-size: 21px;
+        }
+
+        .balance-card {
+            padding: 20px;
             border-radius: 18px;
-            text-align: center;
-            color: #667085;
         }
 
-        @media (max-width: 850px) {
-            .cards {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .activity-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .quick-links {
-                grid-template-columns: repeat(2, 1fr);
-            }
+        .balance-value {
+            font-size: 28px;
         }
 
-        @media (max-width: 520px) {
-            .container {
-                width: 94%;
-                margin-top: 15px;
-            }
-
-            .topbar {
-                padding: 13px 15px;
-            }
-
-            .brand {
-                font-size: 21px;
-            }
-
-            .balance-card {
-                padding: 20px;
-                border-radius: 18px;
-            }
-
-            .balance-value {
-                font-size: 28px;
-            }
-
-            .cards {
-                gap: 9px;
-            }
-
-            .card {
-                padding: 14px;
-            }
-
-            .card-value {
-                font-size: 18px;
-            }
-
-            .activity-card {
-                padding: 16px;
-            }
-
-            .activity-header {
-                align-items: flex-start;
-            }
-
-            .reward {
-                font-size: 10px;
-            }
-
-            .section-title {
-                font-size: 18px;
-            }
+        .cards {
+            gap: 9px;
         }
-    </style>
+
+        .card {
+            padding: 14px;
+        }
+
+        .card-value {
+            font-size: 18px;
+        }
+
+        .activity-card {
+            padding: 16px;
+        }
+
+        .activity-header {
+            align-items: flex-start;
+        }
+
+        .reward {
+            font-size: 10px;
+        }
+
+        .section-title {
+            font-size: 18px;
+        }
+    }
+</style>
+
+
 </head>
 
 <body>
@@ -487,389 +491,405 @@
         <div class="welcome">Welcome, {{ user.phone }}</div>
     </div>
 
-    <a href="{{ url_for('notifications') }}" class="notification">
-        🔔
-        {% if unread_notifications is defined and unread_notifications %}
-            <span class="notification-count">
-                {{ unread_notifications }}
-            </span>
-        {% endif %}
-    </a>
-</header>
 
+<a href="{{ url_for('notifications') }}" class="notification">
+    🔔
+    {% if unread_notifications is defined and unread_notifications %}
+        <span class="notification-count">
+            {{ unread_notifications }}
+        </span>
+    {% endif %}
+</a>
+
+
+</header>
 
 <main class="container">
 
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            {% for message in messages %}
-                <div class="flash">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-
-
-    <!-- BALANCE -->
-
-    <section class="balance-card">
-        <div class="balance-label">Withdrawable Balance</div>
-
-        <div class="balance-value">
-            {{ "{:,.0f}".format(user.withdrawable_balance or 0) }} Frw
-        </div>
-
-        <div class="balance-note">
-            Available balance for withdrawal
-        </div>
-    </section>
-
-
-    <!-- STATS -->
-
-    <section class="cards">
-
-        <div class="card">
-            <div class="card-title">Total Saved</div>
-            <div class="card-value">
-                {{ "{:,.0f}".format(user.total_saved or 0) }} Frw
+```
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        {% for message in messages %}
+            <div class="flash">
+                {{ message }}
             </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">Total Earned</div>
-            <div class="card-value">
-                {{ "{:,.0f}".format(user.total_earned or 0) }} Frw
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">Withdrawn</div>
-            <div class="card-value">
-                {{ "{:,.0f}".format(user.total_withdrawn or 0) }} Frw
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-title">Account</div>
-            <div class="card-value">
-                {% if user.is_active %}
-                    Active
-                {% else %}
-                    Inactive
-                {% endif %}
-            </div>
-        </div>
-
-    </section>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
 
 
-    <!-- DAILY ACTIVITIES -->
+<!-- BALANCE -->
 
-    <div class="section-title">
-        Daily Activities
+<section class="balance-card">
+    <div class="balance-label">Total Balance</div>
+
+    <div class="balance-value">
+        {{ "{:,.0f}".format((user.saved_balance or 0) + (user.withdrawable_balance or 0)) }} Frw
     </div>
 
-    <div class="activity-grid">
+    <div class="balance-note">
+        Your total balance including saved money and earnings
+    </div>
 
-        <!-- VIDEO -->
+    <div style="margin-top: 16px; display: grid; gap: 8px;">
 
-        <div class="activity-card
+        <div style="display: flex; justify-content: space-between; gap: 12px;">
+            <span>Available Cash Out</span>
+            <strong>
+                {{ "{:,.0f}".format(user.withdrawable_balance or 0) }} Frw
+            </strong>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; gap: 12px;">
+            <span>Saved / Locked</span>
+            <strong>
+                {{ "{:,.0f}".format(user.saved_balance or 0) }} Frw
+            </strong>
+        </div>
+
+    </div>
+
+    <div class="balance-note" style="margin-top: 12px;">
+        Saved money is locked and cannot be withdrawn.
+    </div>
+</section>
+
+
+<!-- STATS -->
+
+<section class="cards">
+
+    <div class="card">
+        <div class="card-title">Total Saved</div>
+        <div class="card-value">
+            {{ "{:,.0f}".format(user.total_saved or 0) }} Frw
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Total Earned</div>
+        <div class="card-value">
+            {{ "{:,.0f}".format(user.total_earned or 0) }} Frw
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Withdrawn</div>
+        <div class="card-value">
+            {{ "{:,.0f}".format(user.total_withdrawn or 0) }} Frw
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Account</div>
+        <div class="card-value">
+            {% if user.is_active %}
+                Active
+            {% else %}
+                Inactive
+            {% endif %}
+        </div>
+    </div>
+
+</section>
+
+
+<!-- DAILY ACTIVITIES -->
+
+<div class="section-title">
+    Daily Activities
+</div>
+
+<div class="activity-grid">
+
+    <!-- VIDEO -->
+
+    <div class="activity-card
+        {% if daily_activity and daily_activity.video_completed %}
+            completed
+        {% endif %}">
+
+        <div class="activity-header">
+
+            <div class="activity-icon">
+                ▶
+            </div>
+
+            <div class="activity-name">
+                Watch Video
+            </div>
+
             {% if daily_activity and daily_activity.video_completed %}
-                completed
-            {% endif %}">
+                <div class="completed-badge">
+                    Completed
+                </div>
+            {% endif %}
 
-            <div class="activity-header">
+        </div>
 
-                <div class="activity-icon">
-                    ▶
+
+        {% if video %}
+
+            <div class="description">
+                {{ video.description }}
+            </div>
+
+            <div class="video-box">
+
+                <a
+                    href="{{ video.video_url }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="video-link"
+                    id="videoLink"
+                >
+                    ▶ Open Video
+                </a>
+
+                <div class="timer" id="timerText">
+                    Watch for {{ min_video_watch_seconds or 30 }} seconds
                 </div>
 
-                <div class="activity-name">
-                    Watch Video
+                <div class="progress">
+                    <div
+                        class="progress-bar"
+                        id="videoProgress">
+                    </div>
                 </div>
-
-                {% if daily_activity and daily_activity.video_completed %}
-                    <div class="completed-badge">
-                        Completed
-                    </div>
-                {% else %}
-                    <div class="reward">
-                        +{{ video.reward if video else 0 }} Frw
-                    </div>
-                {% endif %}
 
             </div>
 
 
-            {% if video %}
+            {% if daily_activity and daily_activity.video_completed %}
 
-                <div class="description">
-                    {{ video.description }}
+                <button class="btn btn-primary" disabled>
+                    ✓ Video Reward Received
+                </button>
+
+            {% else %}
+
+                <button
+                    class="btn btn-primary"
+                    id="videoRewardBtn"
+                    disabled
+                >
+                    Complete Video
+                </button>
+
+            {% endif %}
+
+
+            <div id="videoStatus" class="status"></div>
+
+        {% else %}
+
+            <div class="empty">
+                No video available today.
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- TASK -->
+
+    <div class="activity-card
+        {% if daily_activity and daily_activity.task_completed %}
+            completed
+        {% endif %}">
+
+        <div class="activity-header">
+
+            <div class="activity-icon">
+                ✓
+            </div>
+
+            <div class="activity-name">
+                Daily Task
+            </div>
+
+            {% if daily_activity and daily_activity.task_completed %}
+
+                <div class="completed-badge">
+                    Completed
                 </div>
 
-                <div class="video-box">
+            {% endif %}
 
-                    <a
-                        href="{{ video.video_url }}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="video-link"
-                        id="videoLink"
-                    >
-                        ▶ Open Video
-                    </a>
+        </div>
 
-                    <div class="timer" id="timerText">
-                        Watch for {{ min_video_watch_seconds or 30 }} seconds
-                    </div>
 
-                    <div class="progress">
-                        <div
-                            class="progress-bar"
-                            id="videoProgress">
-                        </div>
-                    </div>
+        {% if task %}
 
+            <div class="description">
+                {{ task.description }}
+            </div>
+
+            <div class="question">
+                {{ task.title }}
+            </div>
+
+
+            {% if daily_activity and daily_activity.task_completed %}
+
+                <div class="status success" style="display:block;">
+                    ✓ You have completed today's task.
                 </div>
 
+            {% else %}
 
-                {% if daily_activity and daily_activity.video_completed %}
+                <form id="taskForm">
 
-                    <button class="btn btn-primary" disabled>
-                        ✓ Video Reward Received
-                    </button>
+                    <div class="choices">
 
-                {% else %}
+                        <label class="choice">
+                            <input
+                                type="radio"
+                                name="answer"
+                                value="A"
+                            >
+                            <span class="choice-letter">A</span>
+                            <span>{{ task.option_a }}</span>
+                        </label>
+
+                        <label class="choice">
+                            <input
+                                type="radio"
+                                name="answer"
+                                value="B"
+                            >
+                            <span class="choice-letter">B</span>
+                            <span>{{ task.option_b }}</span>
+                        </label>
+
+                        <label class="choice">
+                            <input
+                                type="radio"
+                                name="answer"
+                                value="C"
+                            >
+                            <span class="choice-letter">C</span>
+                            <span>{{ task.option_c }}</span>
+                        </label>
+
+                        <label class="choice">
+                            <input
+                                type="radio"
+                                name="answer"
+                                value="D"
+                            >
+                            <span class="choice-letter">D</span>
+                            <span>{{ task.option_d }}</span>
+                        </label>
+
+                    </div>
+
 
                     <button
+                        type="submit"
                         class="btn btn-primary"
-                        id="videoRewardBtn"
-                        disabled
+                        id="taskSubmitBtn"
                     >
-                        Complete Video
+                        Submit Answer
                     </button>
 
-                {% endif %}
+                </form>
 
 
-                <div id="videoStatus" class="status"></div>
-
-            {% else %}
-
-                <div class="empty">
-                    No video available today.
-                </div>
+                <div id="taskStatus" class="status"></div>
 
             {% endif %}
 
-        </div>
+        {% else %}
 
-
-        <!-- TASK -->
-
-        <div class="activity-card
-            {% if daily_activity and daily_activity.task_completed %}
-                completed
-            {% endif %}">
-
-            <div class="activity-header">
-
-                <div class="activity-icon">
-                    ✓
-                </div>
-
-                <div class="activity-name">
-                    Daily Task
-                </div>
-
-                {% if daily_activity and daily_activity.task_completed %}
-
-                    <div class="completed-badge">
-                        Completed
-                    </div>
-
-                {% else %}
-
-                    <div class="reward">
-                        +{{ task.reward if task else 0 }} Frw
-                    </div>
-
-                {% endif %}
-
+            <div class="empty">
+                No task available today.
             </div>
 
-
-            {% if task %}
-
-                <div class="description">
-                    {{ task.description }}
-                </div>
-
-                <div class="question">
-                    {{ task.title }}
-                </div>
-
-
-                {% if daily_activity and daily_activity.task_completed %}
-
-                    <div class="status success" style="display:block;">
-                        ✓ You have completed today's task.
-                    </div>
-
-                {% else %}
-
-                    <form id="taskForm">
-
-                        <div class="choices">
-
-                            <label class="choice">
-                                <input
-                                    type="radio"
-                                    name="answer"
-                                    value="A"
-                                >
-                                <span class="choice-letter">A</span>
-                                <span>{{ task.option_a }}</span>
-                            </label>
-
-                            <label class="choice">
-                                <input
-                                    type="radio"
-                                    name="answer"
-                                    value="B"
-                                >
-                                <span class="choice-letter">B</span>
-                                <span>{{ task.option_b }}</span>
-                            </label>
-
-                            <label class="choice">
-                                <input
-                                    type="radio"
-                                    name="answer"
-                                    value="C"
-                                >
-                                <span class="choice-letter">C</span>
-                                <span>{{ task.option_c }}</span>
-                            </label>
-
-                            <label class="choice">
-                                <input
-                                    type="radio"
-                                    name="answer"
-                                    value="D"
-                                >
-                                <span class="choice-letter">D</span>
-                                <span>{{ task.option_d }}</span>
-                            </label>
-
-                        </div>
-
-
-                        <button
-                            type="submit"
-                            class="btn btn-primary"
-                            id="taskSubmitBtn"
-                        >
-                            Submit Answer
-                        </button>
-
-                    </form>
-
-
-                    <div id="taskStatus" class="status"></div>
-
-                {% endif %}
-
-            {% else %}
-
-                <div class="empty">
-                    No task available today.
-                </div>
-
-            {% endif %}
-
-        </div>
+        {% endif %}
 
     </div>
 
+</div>
 
-    <!-- QUICK LINKS -->
 
-    <div class="section-title">
-        Quick Access
-    </div>
+<!-- QUICK LINKS -->
 
-    <div class="quick-links">
+<div class="section-title">
+    Quick Access
+</div>
 
-        <a href="{{ url_for('cash_in') }}" class="quick-link">
-            <span class="quick-icon">💰</span>
-            Cash In
-        </a>
+<div class="quick-links">
 
-        <a href="{{ url_for('cash_out') }}" class="quick-link">
-            <span class="quick-icon">💸</span>
-            Cash Out
-        </a>
+    <a href="{{ url_for('cash_in') }}" class="quick-link">
+        <span class="quick-icon">💰</span>
+        Cash In
+    </a>
 
-        <a href="{{ url_for('profile') }}" class="quick-link">
-            <span class="quick-icon">👤</span>
-            Profile
-        </a>
+    <a href="{{ url_for('cash_out') }}" class="quick-link">
+        <span class="quick-icon">💸</span>
+        Cash Out
+    </a>
 
-        <a href="{{ url_for('help_center') }}" class="quick-link">
-            <span class="quick-icon">❓</span>
-            Help Center
-        </a>
+    <a href="{{ url_for('profile') }}" class="quick-link">
+        <span class="quick-icon">👤</span>
+        Profile
+    </a>
 
-    </div>
+    <a href="{{ url_for('help_center') }}" class="quick-link">
+        <span class="quick-icon">❓</span>
+        Help Center
+    </a>
+
+</div>
+
 
 </main>
-
 
 <!-- BOTTOM NAV -->
 
 <nav class="bottom-nav">
 
-    <div class="nav-inner">
+```
+<div class="nav-inner">
 
-        <a
-            href="{{ url_for('home') }}"
-            class="nav-item active"
-        >
-            <span>⌂</span>
-            Home
-        </a>
+    <a
+        href="{{ url_for('home') }}"
+        class="nav-item active"
+    >
+        <span>⌂</span>
+        Home
+    </a>
 
-        <a
-            href="{{ url_for('cash_in') }}"
-            class="nav-item"
-        >
-            <span>＋</span>
-            Save
-        </a>
+    <a
+        href="{{ url_for('cash_in') }}"
+        class="nav-item"
+    >
+        <span>＋</span>
+        Save
+    </a>
 
-        <a
-            href="{{ url_for('cash_out') }}"
-            class="nav-item"
-        >
-            <span>↗</span>
-            Withdraw
-        </a>
+    <a
+        href="{{ url_for('cash_out') }}"
+        class="nav-item"
+    >
+        <span>↗</span>
+        Withdraw
+    </a>
 
-        <a
-            href="{{ url_for('profile') }}"
-            class="nav-item"
-        >
-            <span>◉</span>
-            Profile
-        </a>
+    <a
+        href="{{ url_for('profile') }}"
+        class="nav-item"
+    >
+        <span>◉</span>
+        Profile
+    </a>
 
-    </div>
+</div>
+
 
 </nav>
-
 
 <script>
 
@@ -1130,3 +1150,4 @@
 
 </body>
 </html>
+

@@ -1,8 +1,10 @@
 import os
 import sqlite3
-import psycopg
-from psycopg.rows import dict_row
 import secrets
+import psycopg
+
+from psycopg.rows import dict_row
+
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from functools import wraps
@@ -23,20 +25,30 @@ from werkzeug.security import (
     check_password_hash,
 )
 
+from werkzeug.utils import secure_filename
+
 from dotenv import load_dotenv
 
 
 # ============================================================
 # KoraCash
 # User + Admin Unified Login
+# Plan-Based Rewards
 # Automatic Daily Activity Engine
 # ============================================================
 
 load_dotenv()
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DATABASE = os.path.join(BASE_DIR, "koracash.db")
-DATABASE_URL = os.getenv("DATABASE_URL")
+
+DATABASE = os.path.join(
+    BASE_DIR,
+    "koracash.db",
+)
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL"
+)
 
 app = Flask(__name__)
 
@@ -48,6 +60,28 @@ app.config["SECRET_KEY"] = os.getenv(
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
+# ============================================================
+# PAYMENT PROOF UPLOADS
+# ============================================================
+
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+
+PAYMENT_PROOF_DIR = os.path.join(
+    BASE_DIR,
+    "static",
+    "uploads",
+    "payment_proofs",
+)
+
+os.makedirs(PAYMENT_PROOF_DIR, exist_ok=True)
+
+ALLOWED_PAYMENT_PROOF_EXTENSIONS = {
+    "jpg",
+    "jpeg",
+    "png",
+    "webp",
+}
+
 
 # ============================================================
 # CONSTANTS
@@ -56,14 +90,50 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 REGISTRATION_BONUS = 1500
 REFERRAL_BONUS = 1500
 
+# Both plans qualify for referral reward.
 REFERRAL_REQUIRED_SAVE = 3000
 
-VIDEO_REWARD = 1000
-TASK_REWARD = 1000
+# ------------------------------------------------------------
+# SAVE PLANS
+# ------------------------------------------------------------
+
+PLAN_3000 = 3000
+PLAN_6000 = 6000
+
+ALLOWED_SAVE_PLANS = (
+    PLAN_3000,
+    PLAN_6000,
+)
+
+# ------------------------------------------------------------
+# REWARDS
+# ------------------------------------------------------------
+
+PLAN_3000_VIDEO_REWARD = 300
+PLAN_3000_TASK_REWARD = 300
+
+PLAN_6000_VIDEO_REWARD = 600
+PLAN_6000_TASK_REWARD = 600
+
+# Legacy fallback values.
+VIDEO_REWARD = PLAN_3000_VIDEO_REWARD
+TASK_REWARD = PLAN_3000_TASK_REWARD
+
+# ------------------------------------------------------------
+# WITHDRAWAL
+# ------------------------------------------------------------
+
+PLAN_3000_MIN_WITHDRAWAL = 2500
+PLAN_6000_MIN_WITHDRAWAL = 5500
+
+PLAN_3000_WITHDRAWAL_FEE_PERCENT = 3
+PLAN_6000_WITHDRAWAL_FEE_PERCENT = 6
+
+# Kept only for compatibility with old database/code.
+# Withdrawals are NO LONGER locked for 3 days.
+WITHDRAWAL_LOCK_DAYS = 0
 
 PAYMENT_NUMBER = "0798386664"
-
-WITHDRAWAL_LOCK_DAYS = 3
 
 MIN_VIDEO_WATCH_SECONDS = 30
 
@@ -71,7 +141,132 @@ TASK_ROTATION_DAYS = 4
 
 
 # ============================================================
-# DATABASE
+# PLAN HELPERS
+# ============================================================
+
+def normalize_plan(plan):
+    """
+    Convert plan values safely to integer.
+    """
+    try:
+        plan = int(plan)
+    except (TypeError, ValueError):
+        return None
+
+    if plan not in ALLOWED_SAVE_PLANS:
+        return None
+
+    return plan
+
+
+def get_plan_name(plan):
+    plan = normalize_plan(plan)
+
+    if plan == PLAN_3000:
+        return "Plan 3,000"
+
+    if plan == PLAN_6000:
+        return "Plan 6,000"
+
+    return "No Plan"
+
+
+def get_video_reward_for_plan(plan):
+    plan = normalize_plan(plan)
+
+    if plan == PLAN_6000:
+        return PLAN_6000_VIDEO_REWARD
+
+    if plan == PLAN_3000:
+        return PLAN_3000_VIDEO_REWARD
+
+    return 0
+
+
+def get_task_reward_for_plan(plan):
+    plan = normalize_plan(plan)
+
+    if plan == PLAN_6000:
+        return PLAN_6000_TASK_REWARD
+
+    if plan == PLAN_3000:
+        return PLAN_3000_TASK_REWARD
+
+    return 0
+
+
+def get_min_withdrawal_for_plan(plan):
+    plan = normalize_plan(plan)
+
+    if plan == PLAN_6000:
+        return PLAN_6000_MIN_WITHDRAWAL
+
+    if plan == PLAN_3000:
+        return PLAN_3000_MIN_WITHDRAWAL
+
+    return 0
+
+
+def get_withdrawal_fee_percent(plan):
+    plan = normalize_plan(plan)
+
+    if plan == PLAN_6000:
+        return PLAN_6000_WITHDRAWAL_FEE_PERCENT
+
+    if plan == PLAN_3000:
+        return PLAN_3000_WITHDRAWAL_FEE_PERCENT
+
+    return 0
+
+
+def calculate_withdrawal_fee(
+    amount,
+    plan,
+):
+    """
+    Fee is calculated from requested/gross withdrawal amount.
+    """
+    try:
+        amount = int(amount)
+    except (TypeError, ValueError):
+        return 0
+
+    fee_percent = get_withdrawal_fee_percent(plan)
+
+    if fee_percent <= 0:
+        return 0
+
+    return (
+        amount * fee_percent
+    ) // 100
+
+
+def calculate_withdrawal_net(
+    amount,
+    plan,
+):
+    fee = calculate_withdrawal_fee(
+        amount,
+        plan,
+    )
+
+    return max(
+        0,
+        int(amount) - fee,
+    )
+
+
+def plan_is_valid_for_user(user):
+    return bool(
+        user
+        and normalize_plan(
+            user["save_plan"]
+        )
+    )
+
+
+# ============================================================
+# DATABASE ROW HELPERS
 # ============================================================
 
 class HybridRow(dict):
@@ -79,7 +274,9 @@ class HybridRow(dict):
     def __getitem__(self, key):
 
         if isinstance(key, int):
-            return list(self.values())[key]
+            return list(
+                self.values()
+            )[key]
 
         return super().__getitem__(key)
 
@@ -109,13 +306,19 @@ class DatabaseCursor:
             return HybridRow(row)
 
         try:
+
             return HybridRow(
                 zip(
-                    [column[0] for column in self.cursor.description],
+                    [
+                        column[0]
+                        for column in self.cursor.description
+                    ],
                     row,
                 )
             )
+
         except Exception:
+
             return row
 
     def fetchone(self):
@@ -134,7 +337,10 @@ class DatabaseCursor:
         ]
 
     def __getattr__(self, name):
-        return getattr(self.cursor, name)
+        return getattr(
+            self.cursor,
+            name,
+        )
 
 
 class DatabaseConnection:
@@ -152,11 +358,6 @@ class DatabaseConnection:
             "BEGIN",
         )
 
-        sql = sql.replace(
-            "date(?, ?)",
-            "(CAST(? AS DATE) + CAST(? AS INTEGER))",
-        )
-
         return sql.replace(
             "?",
             "%s",
@@ -171,8 +372,13 @@ class DatabaseConnection:
         sql = self._convert_sql(sql)
 
         if params is None:
-            cursor = self.connection.execute(sql)
+
+            cursor = self.connection.execute(
+                sql
+            )
+
         else:
+
             cursor = self.connection.execute(
                 sql,
                 params,
@@ -198,6 +404,7 @@ class DatabaseConnection:
     def executescript(self, script):
 
         if DATABASE_URL:
+
             raise RuntimeError(
                 "SQLite executescript() cannot be used with Neon."
             )
@@ -241,32 +448,48 @@ def get_db():
     return DatabaseConnection(conn)
 
 
+# ============================================================
+# DATABASE MIGRATION HELPERS
+# ============================================================
+
 def ensure_column(
     conn,
     table_name,
     column_name,
     definition,
 ):
+
     if DATABASE_URL:
+
         columns = conn.execute(
             """
             SELECT column_name
             FROM information_schema.columns
-            WHERE table_name = %s
+            WHERE table_name = ?
             """,
-            (table_name,),
+            (
+                table_name,
+            ),
         ).fetchall()
+
+        existing_columns = {
+            column["column_name"]
+            for column in columns
+        }
+
     else:
+
         columns = conn.execute(
             f"PRAGMA table_info({table_name})"
         ).fetchall()
 
-    existing_columns = {
-        column["column_name"] if DATABASE_URL else column["name"]
-        for column in columns
-    }
+        existing_columns = {
+            column["name"]
+            for column in columns
+        }
 
     if column_name not in existing_columns:
+
         conn.execute(
             f"""
             ALTER TABLE {table_name}
@@ -274,352 +497,105 @@ def ensure_column(
             """
         )
 
-def init_db():
 
-    conn = get_db()
-
-    if DATABASE_URL:
-
-        # --------------------------------------------------------
-        # NEON / POSTGRESQL
-        #
-        # Tables were already created and data was migrated.
-        # Do NOT run SQLite executescript() here.
-        # --------------------------------------------------------
-
-        ensure_column(
-            conn,
-            "videos",
-            "duration_seconds",
-            "INTEGER DEFAULT 0",
-        )
-
-        ensure_column(
-            conn,
-            "videos",
-            "category",
-            "TEXT DEFAULT 'General'",
-        )
-
-        ensure_column(
-            conn,
-            "videos",
-            "source",
-            "TEXT DEFAULT 'Unknown'",
-        )
-
-        ensure_column(
-            conn,
-            "videos",
-            "license",
-            "TEXT DEFAULT 'Unknown'",
-        )
-
-        ensure_column(
-            conn,
-            "tasks",
-            "category",
-            "TEXT DEFAULT 'General'",
-        )
-
-        ensure_column(
-            conn,
-            "tasks",
-            "option_a",
-            "TEXT",
-        )
-
-        ensure_column(
-            conn,
-            "tasks",
-            "option_b",
-            "TEXT",
-        )
-
-        ensure_column(
-            conn,
-            "tasks",
-            "option_c",
-            "TEXT",
-        )
-
-        ensure_column(
-            conn,
-            "tasks",
-            "option_d",
-            "TEXT",
-        )
-
-        ensure_column(
-            conn,
-            "tasks",
-            "correct_answer",
-            "TEXT",
-        )
-
-        seed_content(conn)
-
-        conn.commit()
-        conn.close()
-
-        return
+def migrate_database(conn):
 
     # --------------------------------------------------------
-    # SQLITE
+    # USERS
     # --------------------------------------------------------
 
-    conn.executescript(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            phone TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            referral_code TEXT UNIQUE NOT NULL,
-            referred_by INTEGER,
-
-            saved_balance INTEGER NOT NULL DEFAULT 0,
-            withdrawable_balance INTEGER NOT NULL DEFAULT 0,
-            total_earned INTEGER NOT NULL DEFAULT 0,
-            total_withdrawn INTEGER NOT NULL DEFAULT 0,
-
-            registration_bonus INTEGER NOT NULL DEFAULT 1500,
-
-            created_at TEXT NOT NULL,
-            last_login TEXT,
-
-            withdrawal_locked_until TEXT,
-
-            is_active INTEGER NOT NULL DEFAULT 1,
-
-            FOREIGN KEY (referred_by)
-                REFERENCES users(id)
-                ON DELETE SET NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS transactions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            user_id INTEGER NOT NULL,
-
-            transaction_type TEXT NOT NULL,
-            amount INTEGER NOT NULL,
-
-            status TEXT NOT NULL DEFAULT 'Completed',
-
-            description TEXT,
-
-            created_at TEXT NOT NULL,
-
-            FOREIGN KEY (user_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS cash_ins (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            user_id INTEGER NOT NULL,
-
-            amount INTEGER NOT NULL,
-
-            payment_number TEXT NOT NULL,
-
-            status TEXT NOT NULL DEFAULT 'Pending',
-
-            created_at TEXT NOT NULL,
-            confirmed_at TEXT,
-
-            FOREIGN KEY (user_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS withdrawals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            user_id INTEGER NOT NULL,
-
-            amount INTEGER NOT NULL,
-
-            network TEXT NOT NULL,
-            phone TEXT NOT NULL,
-
-            status TEXT NOT NULL DEFAULT 'Pending',
-
-            created_at TEXT NOT NULL,
-            completed_at TEXT,
-
-            FOREIGN KEY (user_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS videos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            title TEXT NOT NULL,
-            description TEXT,
-
-            video_url TEXT,
-
-            reward INTEGER NOT NULL DEFAULT 1000,
-
-            is_active INTEGER NOT NULL DEFAULT 1,
-
-            created_at TEXT NOT NULL,
-
-            duration_seconds INTEGER DEFAULT 0,
-            category TEXT DEFAULT 'General',
-            source TEXT DEFAULT 'Unknown',
-            license TEXT DEFAULT 'Unknown'
-        );
-
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            title TEXT NOT NULL,
-            description TEXT,
-
-            reward INTEGER NOT NULL DEFAULT 1000,
-
-            is_active INTEGER NOT NULL DEFAULT 1,
-
-            created_at TEXT NOT NULL,
-
-            category TEXT DEFAULT 'General',
-
-            option_a TEXT,
-            option_b TEXT,
-            option_c TEXT,
-            option_d TEXT,
-
-            correct_answer TEXT
-        );
-
-        CREATE TABLE IF NOT EXISTS daily_activities (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            user_id INTEGER NOT NULL,
-
-            activity_date TEXT NOT NULL,
-
-            video_id INTEGER,
-            task_id INTEGER,
-
-            video_completed INTEGER NOT NULL DEFAULT 0,
-            task_completed INTEGER NOT NULL DEFAULT 0,
-
-            video_rewarded INTEGER NOT NULL DEFAULT 0,
-            task_rewarded INTEGER NOT NULL DEFAULT 0,
-
-            created_at TEXT NOT NULL,
-
-            UNIQUE(user_id, activity_date),
-
-            FOREIGN KEY (user_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE,
-
-            FOREIGN KEY (video_id)
-                REFERENCES videos(id)
-                ON DELETE SET NULL,
-
-            FOREIGN KEY (task_id)
-                REFERENCES tasks(id)
-                ON DELETE SET NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS task_submissions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            user_id INTEGER NOT NULL,
-            task_id INTEGER NOT NULL,
-            activity_date TEXT NOT NULL,
-
-            answer TEXT NOT NULL,
-
-            status TEXT NOT NULL DEFAULT 'Pending',
-
-            submitted_at TEXT NOT NULL,
-            reviewed_at TEXT,
-
-            reviewer_note TEXT,
-
-            UNIQUE(
-                user_id,
-                task_id,
-                activity_date
-            ),
-
-            FOREIGN KEY (user_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE,
-
-            FOREIGN KEY (task_id)
-                REFERENCES tasks(id)
-                ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS referrals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            referrer_id INTEGER NOT NULL,
-            referred_user_id INTEGER NOT NULL,
-
-            bonus_amount INTEGER NOT NULL DEFAULT 1500,
-
-            status TEXT NOT NULL DEFAULT 'Pending',
-
-            created_at TEXT NOT NULL,
-            rewarded_at TEXT,
-
-            UNIQUE(referred_user_id),
-
-            FOREIGN KEY (referrer_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE,
-
-            FOREIGN KEY (referred_user_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS notifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-            user_id INTEGER NOT NULL,
-
-            title TEXT NOT NULL,
-            message TEXT NOT NULL,
-
-            is_read INTEGER NOT NULL DEFAULT 0,
-
-            created_at TEXT NOT NULL,
-
-            FOREIGN KEY (user_id)
-                REFERENCES users(id)
-                ON DELETE CASCADE
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_daily_user_date
-        ON daily_activities(user_id, activity_date);
-
-        CREATE INDEX IF NOT EXISTS idx_task_submissions_user_date
-        ON task_submissions(user_id, activity_date);
-
-        CREATE INDEX IF NOT EXISTS idx_task_submissions_status
-        ON task_submissions(status);
-
-        CREATE INDEX IF NOT EXISTS idx_videos_active
-        ON videos(is_active);
-
-        CREATE INDEX IF NOT EXISTS idx_tasks_active
-        ON tasks(is_active);
-        """
+    ensure_column(
+        conn,
+        "users",
+        "save_plan",
+        "INTEGER",
+    )
+    ensure_column(
+        conn,
+        "cash_ins",
+        "payment_proof",
+        "TEXT",
+    )
+
+    ensure_column(
+        conn,
+        "cash_ins",
+        "ocr_text",
+        "TEXT",
+    )
+
+    ensure_column(
+        conn,
+        "cash_ins",
+        "verification_status",
+        "TEXT DEFAULT 'Pending'",
+    )
+
+    ensure_column(
+        conn,
+        "cash_ins",
+        "verified_amount",
+        "INTEGER",
+    )
+
+    ensure_column(
+        conn,
+        "cash_ins",
+        "verified_recipient",
+        "TEXT",
+    )
+
+    ensure_column(
+        conn,
+        "cash_ins",
+        "verified_phone",
+        "TEXT",
+    )
+
+    ensure_column(
+        conn,
+        "cash_ins",
+        "transaction_reference",
+        "TEXT",
+    )
+    ensure_column(
+        conn,
+        "users",
+        "withdrawal_locked_until",
+        "TEXT",
     )
 
     # --------------------------------------------------------
-    # Older database migrations
+    # CASH INS
+    # --------------------------------------------------------
+
+    ensure_column(
+        conn,
+        "cash_ins",
+        "save_plan",
+        "INTEGER",
+    )
+
+    # --------------------------------------------------------
+    # WITHDRAWALS
+    # --------------------------------------------------------
+
+    ensure_column(
+        conn,
+        "withdrawals",
+        "fee",
+        "INTEGER NOT NULL DEFAULT 0",
+    )
+
+    ensure_column(
+        conn,
+        "withdrawals",
+        "net_amount",
+        "INTEGER NOT NULL DEFAULT 0",
+    )
+
+    # --------------------------------------------------------
+    # VIDEOS
     # --------------------------------------------------------
 
     ensure_column(
@@ -649,6 +625,10 @@ def init_db():
         "license",
         "TEXT DEFAULT 'Unknown'",
     )
+
+    # --------------------------------------------------------
+    # TASKS
+    # --------------------------------------------------------
 
     ensure_column(
         conn,
@@ -692,17 +672,351 @@ def init_db():
         "TEXT",
     )
 
-    seed_content(conn)
 
-    conn.commit()
-    conn.close()
+# ============================================================
+# DATABASE INITIALIZATION
+# ============================================================
+
+def init_db():
+
+    conn = get_db()
+
+    try:
+
+        if not DATABASE_URL:
+
+            conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    phone TEXT UNIQUE NOT NULL,
+
+                    password_hash TEXT NOT NULL,
+
+                    referral_code TEXT UNIQUE NOT NULL,
+
+                    referred_by INTEGER,
+
+                    save_plan INTEGER,
+
+                    saved_balance INTEGER NOT NULL DEFAULT 0,
+
+                    withdrawable_balance INTEGER NOT NULL DEFAULT 0,
+
+                    total_earned INTEGER NOT NULL DEFAULT 0,
+
+                    total_withdrawn INTEGER NOT NULL DEFAULT 0,
+
+                    registration_bonus INTEGER NOT NULL DEFAULT 1500,
+
+                    created_at TEXT NOT NULL,
+
+                    last_login TEXT,
+
+                    withdrawal_locked_until TEXT,
+
+                    is_active INTEGER NOT NULL DEFAULT 1,
+
+                    FOREIGN KEY (referred_by)
+                        REFERENCES users(id)
+                        ON DELETE SET NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    user_id INTEGER NOT NULL,
+
+                    transaction_type TEXT NOT NULL,
+
+                    amount INTEGER NOT NULL,
+
+                    status TEXT NOT NULL DEFAULT 'Completed',
+
+                    description TEXT,
+
+                    created_at TEXT NOT NULL,
+
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS cash_ins (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    user_id INTEGER NOT NULL,
+
+                    amount INTEGER NOT NULL,
+
+                    save_plan INTEGER,
+
+                    payment_number TEXT NOT NULL,
+
+                    status TEXT NOT NULL DEFAULT 'Pending',
+
+                    created_at TEXT NOT NULL,
+
+                    confirmed_at TEXT,
+
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS withdrawals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    user_id INTEGER NOT NULL,
+
+                    amount INTEGER NOT NULL,
+
+                    fee INTEGER NOT NULL DEFAULT 0,
+
+                    net_amount INTEGER NOT NULL DEFAULT 0,
+
+                    network TEXT NOT NULL,
+
+                    phone TEXT NOT NULL,
+
+                    status TEXT NOT NULL DEFAULT 'Pending',
+
+                    created_at TEXT NOT NULL,
+
+                    completed_at TEXT,
+
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS videos (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    title TEXT NOT NULL,
+
+                    description TEXT,
+
+                    video_url TEXT,
+
+                    reward INTEGER NOT NULL DEFAULT 300,
+
+                    is_active INTEGER NOT NULL DEFAULT 1,
+
+                    created_at TEXT NOT NULL,
+
+                    duration_seconds INTEGER DEFAULT 0,
+
+                    category TEXT DEFAULT 'General',
+
+                    source TEXT DEFAULT 'Unknown',
+
+                    license TEXT DEFAULT 'Unknown'
+                );
+
+                CREATE TABLE IF NOT EXISTS tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    title TEXT NOT NULL,
+
+                    description TEXT,
+
+                    reward INTEGER NOT NULL DEFAULT 300,
+
+                    is_active INTEGER NOT NULL DEFAULT 1,
+
+                    created_at TEXT NOT NULL,
+
+                    category TEXT DEFAULT 'General',
+
+                    option_a TEXT,
+
+                    option_b TEXT,
+
+                    option_c TEXT,
+
+                    option_d TEXT,
+
+                    correct_answer TEXT
+                );
+
+                CREATE TABLE IF NOT EXISTS daily_activities (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    user_id INTEGER NOT NULL,
+
+                    activity_date TEXT NOT NULL,
+
+                    video_id INTEGER,
+
+                    task_id INTEGER,
+
+                    video_completed INTEGER NOT NULL DEFAULT 0,
+
+                    task_completed INTEGER NOT NULL DEFAULT 0,
+
+                    video_rewarded INTEGER NOT NULL DEFAULT 0,
+
+                    task_rewarded INTEGER NOT NULL DEFAULT 0,
+
+                    created_at TEXT NOT NULL,
+
+                    UNIQUE(user_id, activity_date),
+
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE,
+
+                    FOREIGN KEY (video_id)
+                        REFERENCES videos(id)
+                        ON DELETE SET NULL,
+
+                    FOREIGN KEY (task_id)
+                        REFERENCES tasks(id)
+                        ON DELETE SET NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS task_submissions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    user_id INTEGER NOT NULL,
+
+                    task_id INTEGER NOT NULL,
+
+                    activity_date TEXT NOT NULL,
+
+                    answer TEXT NOT NULL,
+
+                    status TEXT NOT NULL DEFAULT 'Pending',
+
+                    submitted_at TEXT NOT NULL,
+
+                    reviewed_at TEXT,
+
+                    reviewer_note TEXT,
+
+                    UNIQUE(
+                        user_id,
+                        task_id,
+                        activity_date
+                    ),
+
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE,
+
+                    FOREIGN KEY (task_id)
+                        REFERENCES tasks(id)
+                        ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS referrals (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    referrer_id INTEGER NOT NULL,
+
+                    referred_user_id INTEGER NOT NULL,
+
+                    bonus_amount INTEGER NOT NULL DEFAULT 1500,
+
+                    status TEXT NOT NULL DEFAULT 'Pending',
+
+                    created_at TEXT NOT NULL,
+
+                    rewarded_at TEXT,
+
+                    UNIQUE(referred_user_id),
+
+                    FOREIGN KEY (referrer_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE,
+
+                    FOREIGN KEY (referred_user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS notifications (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+                    user_id INTEGER NOT NULL,
+
+                    title TEXT NOT NULL,
+
+                    message TEXT NOT NULL,
+
+                    is_read INTEGER NOT NULL DEFAULT 0,
+
+                    created_at TEXT NOT NULL,
+
+                    FOREIGN KEY (user_id)
+                        REFERENCES users(id)
+                        ON DELETE CASCADE
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_daily_user_date
+                ON daily_activities(user_id, activity_date);
+
+                CREATE INDEX IF NOT EXISTS idx_task_submissions_user_date
+                ON task_submissions(user_id, activity_date);
+
+                CREATE INDEX IF NOT EXISTS idx_task_submissions_status
+                ON task_submissions(status);
+
+                CREATE INDEX IF NOT EXISTS idx_videos_active
+                ON videos(is_active);
+
+                CREATE INDEX IF NOT EXISTS idx_tasks_active
+                ON tasks(is_active);
+
+                CREATE INDEX IF NOT EXISTS idx_cash_ins_status
+                ON cash_ins(status);
+
+                CREATE INDEX IF NOT EXISTS idx_withdrawals_status
+                ON withdrawals(status);
+                """
+            )
+
+        else:
+
+            # Neon tables already exist.
+            # Only migrations are performed here.
+
+            migrate_database(
+                conn
+            )
+
+        # SQLite migrations also run here.
+        migrate_database(
+            conn
+        )
+
+        seed_content(
+            conn
+        )
+
+        conn.commit()
+
+    except Exception:
+
+        conn.rollback()
+
+        raise
+
+    finally:
+
+        conn.close()
+
 
 # ============================================================
 # TIME HELPERS
 # ============================================================
 
 def now_utc():
-    return datetime.now(timezone.utc)
+    return datetime.now(
+        timezone.utc
+    )
 
 
 def now_iso():
@@ -710,11 +1024,14 @@ def now_iso():
 
 
 def today_string():
+
     rwanda_time = datetime.now(
         ZoneInfo("Africa/Kigali")
     )
 
-    return rwanda_time.strftime("%Y-%m-%d")
+    return rwanda_time.strftime(
+        "%Y-%m-%d"
+    )
 
 
 # ============================================================
@@ -724,16 +1041,21 @@ def today_string():
 def seed_content(conn):
 
     video_count = conn.execute(
-        "SELECT COUNT(*) AS count FROM videos"
+        """
+        SELECT COUNT(*) AS count
+        FROM videos
+        """
     ).fetchone()["count"]
 
     task_count = conn.execute(
-        "SELECT COUNT(*) AS count FROM tasks"
+        """
+        SELECT COUNT(*) AS count
+        FROM tasks
+        """
     ).fetchone()["count"]
 
     now = now_iso()
 
-    # Only seed placeholders if library is completely empty.
     if video_count == 0:
 
         videos = [
@@ -741,35 +1063,35 @@ def seed_content(conn):
                 "Daily Video 1",
                 "Watch today's KoraCash learning video.",
                 "https://example.com/video1",
-                VIDEO_REWARD,
+                PLAN_3000_VIDEO_REWARD,
                 now,
             ),
             (
                 "Daily Video 2",
                 "Watch today's KoraCash learning video.",
                 "https://example.com/video2",
-                VIDEO_REWARD,
+                PLAN_3000_VIDEO_REWARD,
                 now,
             ),
             (
                 "Daily Video 3",
                 "Watch today's KoraCash learning video.",
                 "https://example.com/video3",
-                VIDEO_REWARD,
+                PLAN_3000_VIDEO_REWARD,
                 now,
             ),
             (
                 "Daily Video 4",
                 "Watch today's KoraCash learning video.",
                 "https://example.com/video4",
-                VIDEO_REWARD,
+                PLAN_3000_VIDEO_REWARD,
                 now,
             ),
             (
                 "Daily Video 5",
                 "Watch today's KoraCash learning video.",
                 "https://example.com/video5",
-                VIDEO_REWARD,
+                PLAN_3000_VIDEO_REWARD,
                 now,
             ),
         ]
@@ -789,38 +1111,37 @@ def seed_content(conn):
             videos,
         )
 
-    # Only seed placeholders if task library is completely empty.
     if task_count == 0:
 
         tasks = [
             (
                 "Daily Task 1",
                 "Complete today's task.",
-                TASK_REWARD,
+                PLAN_3000_TASK_REWARD,
                 now,
             ),
             (
                 "Daily Task 2",
                 "Complete today's task.",
-                TASK_REWARD,
+                PLAN_3000_TASK_REWARD,
                 now,
             ),
             (
                 "Daily Task 3",
                 "Complete today's task.",
-                TASK_REWARD,
+                PLAN_3000_TASK_REWARD,
                 now,
             ),
             (
                 "Daily Task 4",
                 "Complete today's task.",
-                TASK_REWARD,
+                PLAN_3000_TASK_REWARD,
                 now,
             ),
             (
                 "Daily Task 5",
                 "Complete today's task.",
-                TASK_REWARD,
+                PLAN_3000_TASK_REWARD,
                 now,
             ),
         ]
@@ -846,25 +1167,33 @@ def seed_content(conn):
 
 def current_user():
 
-    user_id = session.get("user_id")
+    user_id = session.get(
+        "user_id"
+    )
 
     if not user_id:
         return None
 
     conn = get_db()
 
-    user = conn.execute(
-        """
-        SELECT *
-        FROM users
-        WHERE id = ?
-        """,
-        (user_id,),
-    ).fetchone()
+    try:
 
-    conn.close()
+        user = conn.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE id = ?
+            """,
+            (
+                user_id,
+            ),
+        ).fetchone()
 
-    return user
+        return user
+
+    finally:
+
+        conn.close()
 
 
 def login_required(view):
@@ -872,7 +1201,9 @@ def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
 
-        if not session.get("user_id"):
+        if not session.get(
+            "user_id"
+        ):
 
             flash(
                 "Please login first.",
@@ -911,7 +1242,10 @@ def login_required(view):
                 url_for("login")
             )
 
-        return view(*args, **kwargs)
+        return view(
+            *args,
+            **kwargs
+        )
 
     return wrapped
 
@@ -957,7 +1291,7 @@ def create_notification(
 
 
 # ============================================================
-# TRANSACTIONS
+# TRANSACTIONS / LEDGER
 # ============================================================
 
 def create_transaction(
@@ -985,7 +1319,7 @@ def create_transaction(
         (
             user_id,
             transaction_type,
-            amount,
+            int(amount),
             status,
             description,
             now_iso(),
@@ -1008,16 +1342,22 @@ def generate_referral_code():
 
         conn = get_db()
 
-        exists = conn.execute(
-            """
-            SELECT id
-            FROM users
-            WHERE referral_code = ?
-            """,
-            (code,),
-        ).fetchone()
+        try:
 
-        conn.close()
+            exists = conn.execute(
+                """
+                SELECT id
+                FROM users
+                WHERE referral_code = ?
+                """,
+                (
+                    code,
+                ),
+            ).fetchone()
+
+        finally:
+
+            conn.close()
 
         if not exists:
             return code
@@ -1027,7 +1367,10 @@ def generate_referral_code():
 # DAILY ACTIVITY HELPERS
 # ============================================================
 
-def get_valid_video(conn, video_id):
+def get_valid_video(
+    conn,
+    video_id,
+):
 
     if not video_id:
         return None
@@ -1041,11 +1384,16 @@ def get_valid_video(conn, video_id):
         AND video_url IS NOT NULL
         AND TRIM(video_url) != ''
         """,
-        (video_id,),
+        (
+            video_id,
+        ),
     ).fetchone()
 
 
-def get_valid_task(conn, task_id):
+def get_valid_task(
+    conn,
+    task_id,
+):
 
     if not task_id:
         return None
@@ -1061,45 +1409,65 @@ def get_valid_task(conn, task_id):
         AND option_c IS NOT NULL
         AND option_d IS NOT NULL
         AND correct_answer IS NOT NULL
-        AND TRIM(correct_answer) IN ('A', 'B', 'C', 'D', 'a', 'b', 'c', 'd')
-        """,
-        (task_id,),
-    ).fetchone()
-
-
-def choose_daily_video(conn, user_id, date_value):
-
-    video = conn.execute(
-        """
-        SELECT *
-        FROM videos
-        WHERE is_active = 1
-        AND video_url IS NOT NULL
-        AND TRIM(video_url) != ''
-
-        AND id NOT IN
-        (
-            SELECT video_id
-            FROM daily_activities
-            WHERE user_id = ?
-            AND video_id IS NOT NULL
-            AND CAST(activity_date AS DATE) >= CAST(? AS DATE) + CAST(? AS INTERVAL)
-        )
-
-        ORDER BY RANDOM()
-        LIMIT 1
+        AND UPPER(TRIM(correct_answer))
+            IN ('A', 'B', 'C', 'D')
         """,
         (
-            user_id,
-            date_value,
-            f"-{TASK_ROTATION_DAYS} days",
+            task_id,
         ),
     ).fetchone()
 
-    if video:
-        return video
 
-    return conn.execute(
+def choose_daily_video(
+    conn,
+    user_id,
+    date_value,
+):
+
+    # --------------------------------------------------------
+    # Cross-database implementation.
+    # Avoids SQLite/PostgreSQL date syntax differences.
+    # --------------------------------------------------------
+
+    try:
+
+        current_date = datetime.strptime(
+            date_value,
+            "%Y-%m-%d",
+        ).date()
+
+    except ValueError:
+
+        current_date = datetime.now().date()
+
+    cutoff_date = (
+        current_date
+        - timedelta(
+            days=TASK_ROTATION_DAYS
+        )
+    ).isoformat()
+
+    recent = conn.execute(
+        """
+        SELECT video_id
+        FROM daily_activities
+        WHERE user_id = ?
+        AND video_id IS NOT NULL
+        AND activity_date >= ?
+        """,
+        (
+            user_id,
+            cutoff_date,
+        ),
+    ).fetchall()
+
+    excluded_ids = {
+        row["video_id"]
+        for row in recent
+        if row["video_id"] is not None
+    }
+
+    videos = conn.execute(
         """
         SELECT *
         FROM videos
@@ -1107,14 +1475,65 @@ def choose_daily_video(conn, user_id, date_value):
         AND video_url IS NOT NULL
         AND TRIM(video_url) != ''
         ORDER BY RANDOM()
-        LIMIT 1
         """
-    ).fetchone()
+    ).fetchall()
+
+    for video in videos:
+
+        if video["id"] not in excluded_ids:
+            return video
+
+    if videos:
+        return videos[0]
+
+    return None
 
 
-def choose_daily_task(conn, user_id, date_value):
+def choose_daily_task(
+    conn,
+    user_id,
+    date_value,
+):
 
-    task = conn.execute(
+    try:
+
+        current_date = datetime.strptime(
+            date_value,
+            "%Y-%m-%d",
+        ).date()
+
+    except ValueError:
+
+        current_date = datetime.now().date()
+
+    cutoff_date = (
+        current_date
+        - timedelta(
+            days=TASK_ROTATION_DAYS
+        )
+    ).isoformat()
+
+    recent = conn.execute(
+        """
+        SELECT task_id
+        FROM daily_activities
+        WHERE user_id = ?
+        AND task_id IS NOT NULL
+        AND activity_date >= ?
+        """,
+        (
+            user_id,
+            cutoff_date,
+        ),
+    ).fetchall()
+
+    excluded_ids = {
+        row["task_id"]
+        for row in recent
+        if row["task_id"] is not None
+    }
+
+    tasks = conn.execute(
         """
         SELECT *
         FROM tasks
@@ -1127,80 +1546,31 @@ def choose_daily_task(conn, user_id, date_value):
 
         AND correct_answer IS NOT NULL
 
-        AND TRIM(correct_answer) IN
-        (
-            'A',
-            'B',
-            'C',
-            'D',
-            'a',
-            'b',
-            'c',
-            'd'
-        )
-
-        AND id NOT IN
-        (
-            SELECT task_id
-            FROM daily_activities
-            WHERE user_id = ?
-            AND task_id IS NOT NULL
-            AND CAST(activity_date AS DATE) >= CAST(? AS DATE) + CAST(? AS INTERVAL)
-        )
+        AND UPPER(TRIM(correct_answer))
+            IN ('A', 'B', 'C', 'D')
 
         ORDER BY RANDOM()
-        LIMIT 1
-        """,
-        (
-            user_id,
-            date_value,
-            f"-{TASK_ROTATION_DAYS} days",
-        ),
-    ).fetchone()
-
-    if task:
-        return task
-
-    return conn.execute(
         """
-        SELECT *
-        FROM tasks
-        WHERE is_active = 1
+    ).fetchall()
 
-        AND option_a IS NOT NULL
-        AND option_b IS NOT NULL
-        AND option_c IS NOT NULL
-        AND option_d IS NOT NULL
+    for task in tasks:
 
-        AND correct_answer IS NOT NULL
+        if task["id"] not in excluded_ids:
+            return task
 
-        AND TRIM(correct_answer) IN
-        (
-            'A',
-            'B',
-            'C',
-            'D',
-            'a',
-            'b',
-            'c',
-            'd'
-        )
+    if tasks:
+        return tasks[0]
 
-        ORDER BY RANDOM()
-        LIMIT 1
-        """
-    ).fetchone()
+    return None
 
 
 # ============================================================
 # DAILY ACTIVITY ENGINE
-#
-# IMPORTANT FIX:
-# Existing daily activity is checked again.
-# Old/inactive task or video is replaced automatically.
 # ============================================================
 
-def get_or_create_daily_activity(user_id):
+def get_or_create_daily_activity(
+    user_id
+):
 
     date_value = today_string()
 
@@ -1221,10 +1591,6 @@ def get_or_create_daily_activity(user_id):
             ),
         ).fetchone()
 
-        # ----------------------------------------------------
-        # Existing activity
-        # ----------------------------------------------------
-
         if activity:
 
             current_video = get_valid_video(
@@ -1237,14 +1603,15 @@ def get_or_create_daily_activity(user_id):
                 activity["task_id"],
             )
 
-            new_video_id = activity["video_id"]
-            new_task_id = activity["task_id"]
+            new_video_id = activity[
+                "video_id"
+            ]
+
+            new_task_id = activity[
+                "task_id"
+            ]
 
             changed = False
-
-            # ------------------------------------------------
-            # Replace old/inactive video
-            # ------------------------------------------------
 
             if not current_video:
 
@@ -1260,12 +1627,11 @@ def get_or_create_daily_activity(user_id):
                     else None
                 )
 
-                if new_video_id != activity["video_id"]:
-                    changed = True
+                if new_video_id != activity[
+                    "video_id"
+                ]:
 
-            # ------------------------------------------------
-            # Replace old/invalid task
-            # ------------------------------------------------
+                    changed = True
 
             if not current_task:
 
@@ -1281,7 +1647,10 @@ def get_or_create_daily_activity(user_id):
                     else None
                 )
 
-                if new_task_id != activity["task_id"]:
+                if new_task_id != activity[
+                    "task_id"
+                ]:
+
                     changed = True
 
             if changed:
@@ -1309,14 +1678,12 @@ def get_or_create_daily_activity(user_id):
                     FROM daily_activities
                     WHERE id = ?
                     """,
-                    (activity["id"],),
+                    (
+                        activity["id"],
+                    ),
                 ).fetchone()
 
             return activity
-
-        # ----------------------------------------------------
-        # No activity yet: create one
-        # ----------------------------------------------------
 
         video = choose_daily_video(
             conn,
@@ -1367,7 +1734,7 @@ def get_or_create_daily_activity(user_id):
 
             conn.commit()
 
-        except sqlite3.IntegrityError:
+        except Exception:
 
             conn.rollback()
 
@@ -1390,64 +1757,86 @@ def get_or_create_daily_activity(user_id):
 
 
 # ============================================================
-# SAVED MONEY
+# SAVED MONEY / PLAN
 # ============================================================
 
-def has_saved_money(user_id):
+def has_saved_money(
+    user_id
+):
 
     conn = get_db()
 
-    row = conn.execute(
-        """
-        SELECT saved_balance
-        FROM users
-        WHERE id = ?
-        """,
-        (user_id,),
-    ).fetchone()
+    try:
 
-    conn.close()
+        row = conn.execute(
+            """
+            SELECT
+                saved_balance,
+                save_plan
+            FROM users
+            WHERE id = ?
+            """,
+            (
+                user_id,
+            ),
+        ).fetchone()
 
-    return bool(
-        row
-        and row["saved_balance"] > 0
-    )
+        return bool(
+            row
+            and row["saved_balance"] > 0
+            and normalize_plan(
+                row["save_plan"]
+            )
+        )
+
+    finally:
+
+        conn.close()
+
+
+def get_user_plan(
+    user_id
+):
+
+    conn = get_db()
+
+    try:
+
+        row = conn.execute(
+            """
+            SELECT save_plan
+            FROM users
+            WHERE id = ?
+            """,
+            (
+                user_id,
+            ),
+        ).fetchone()
+
+        if not row:
+            return None
+
+        return normalize_plan(
+            row["save_plan"]
+        )
+
+    finally:
+
+        conn.close()
 
 
 # ============================================================
 # WITHDRAWAL LOCK
 # ============================================================
 
-def get_withdrawal_lock(user):
+def get_withdrawal_lock(
+    user
+):
 
-    lock_value = user[
-        "withdrawal_locked_until"
-    ]
+    # New business logic:
+    # There is NO 3-day withdrawal lock.
 
-    if not lock_value:
-        return None
-
-    try:
-
-        lock_date = datetime.fromisoformat(
-            lock_value
-        )
-
-    except ValueError:
-
-        return None
-
-    if lock_date.tzinfo is None:
-
-        lock_date = lock_date.replace(
-            tzinfo=timezone.utc
-        )
-
-    if now_utc() >= lock_date:
-
-        return None
-
-    return lock_date
+    return None
 
 
 # ============================================================
@@ -1471,7 +1860,9 @@ def reward_referral_after_save(
         AND status = 'Pending'
         LIMIT 1
         """,
-        (referred_user_id,),
+        (
+            referred_user_id,
+        ),
     ).fetchone()
 
     if not referral:
@@ -1483,13 +1874,22 @@ def reward_referral_after_save(
         FROM users
         WHERE id = ?
         """,
-        (referral["referrer_id"],),
+        (
+            referral["referrer_id"],
+        ),
     ).fetchone()
 
     if not referrer:
         return False
 
-    conn.execute(
+    # --------------------------------------------------------
+    # Prevent reward to inactive/deleted account.
+    # --------------------------------------------------------
+
+    if not referrer["is_active"]:
+        return False
+
+    updated = conn.execute(
         """
         UPDATE users
         SET
@@ -1508,15 +1908,17 @@ def reward_referral_after_save(
         ),
     )
 
+    if updated.rowcount != 1:
+        return False
+
     create_transaction(
         conn,
         referral["referrer_id"],
         "REFERRAL_BONUS",
         REFERRAL_BONUS,
         (
-            "Referral bonus because referred user "
-            "completed a confirmed Save of at least "
-            f"{REFERRAL_REQUIRED_SAVE:,} Frw."
+            "Referral bonus after referred user "
+            "completed an approved Save."
         ),
         status="Completed",
     )
@@ -1536,9 +1938,9 @@ def reward_referral_after_save(
             referral["referrer_id"],
             "Referral Bonus",
             (
-                f"You received {REFERRAL_BONUS:,} Frw referral "
-                "bonus because your referred user completed "
-                "a confirmed Save."
+                f"You received {REFERRAL_BONUS:,} Frw "
+                "referral bonus because your referred "
+                "user completed a confirmed Save."
             ),
             now_iso(),
         ),
@@ -1582,28 +1984,30 @@ def confirm_cash_in(
             FROM cash_ins
             WHERE id = ?
             """,
-            (cash_in_id,),
+            (
+                cash_in_id,
+            ),
         ).fetchone()
 
         if not cash_in:
 
             return {
                 "success": False,
-                "message": "Cash In request not found.",
+                "message": "Save request not found.",
             }
 
         if cash_in["status"] == "Completed":
 
             return {
                 "success": False,
-                "message": "Cash In has already been confirmed.",
+                "message": "Save has already been confirmed.",
             }
 
         if cash_in["status"] != "Pending":
 
             return {
                 "success": False,
-                "message": "Cash In cannot be confirmed.",
+                "message": "Save cannot be confirmed.",
             }
 
         amount = (
@@ -1613,9 +2017,7 @@ def confirm_cash_in(
         )
 
         try:
-
             amount = int(amount)
-
         except (TypeError, ValueError):
 
             return {
@@ -1623,23 +2025,75 @@ def confirm_cash_in(
                 "message": "Invalid confirmation amount.",
             }
 
-        if amount <= 0:
+        if amount not in ALLOWED_SAVE_PLANS:
 
             return {
                 "success": False,
                 "message": (
-                    "Confirmation amount must be "
-                    "greater than zero."
+                    "Save amount must be either "
+                    "3,000 Frw or 6,000 Frw."
                 ),
             }
 
-        user_id = cash_in["user_id"]
+        user_id = cash_in[
+            "user_id"
+        ]
+
+        selected_plan = normalize_plan(
+            cash_in["save_plan"]
+        )
+
+        if not selected_plan:
+            selected_plan = amount
+
+        if selected_plan != amount:
+
+            return {
+                "success": False,
+                "message": (
+                    "The confirmed amount does not "
+                    "match the selected Save plan."
+                ),
+            }
+
+        user = conn.execute(
+            """
+            SELECT *
+            FROM users
+            WHERE id = ?
+            """,
+            (
+                user_id,
+            ),
+        ).fetchone()
+
+        if not user:
+
+            return {
+                "success": False,
+                "message": "User account not found.",
+            }
+
+        existing_plan = normalize_plan(
+            user["save_plan"]
+        )
+
+        if existing_plan and existing_plan != selected_plan:
+
+            return {
+                "success": False,
+                "message": (
+                    "This user already has a different "
+                    "active Save plan."
+                ),
+            }
 
         updated = conn.execute(
             """
             UPDATE cash_ins
             SET
                 amount = ?,
+                save_plan = ?,
                 status = 'Completed',
                 confirmed_at = ?
 
@@ -1648,6 +2102,7 @@ def confirm_cash_in(
             """,
             (
                 amount,
+                selected_plan,
                 now_iso(),
                 cash_in_id,
             ),
@@ -1659,30 +2114,46 @@ def confirm_cash_in(
 
             return {
                 "success": False,
-                "message": "Cash In has already been processed.",
+                "message": (
+                    "Save has already been processed."
+                ),
             }
+
+                # ----------------------------------------------------
+        # APPROVED SAVE
+        #
+        # Save is added ONLY to:
+        # 1. saved_balance
+        #
+        # Save money is NOT withdrawable.
+        # Registration bonus and activity rewards
+        # remain in withdrawable_balance.
+        # ----------------------------------------------------
 
         conn.execute(
             """
             UPDATE users
             SET
+                save_plan = ?,
                 saved_balance =
                     saved_balance + ?
-
             WHERE id = ?
             """,
             (
+                selected_plan,
                 amount,
                 user_id,
             ),
         )
-
         create_transaction(
             conn,
             user_id,
-            "CASH_IN",
+            "SAVE",
             amount,
-            "Confirmed Save / Cash In",
+            (
+                f"Approved Save - "
+                f"{get_plan_name(selected_plan)}"
+            ),
             status="Completed",
         )
 
@@ -1699,10 +2170,11 @@ def confirm_cash_in(
             """,
             (
                 user_id,
-                "Save Confirmed",
+                "Save Approved",
                 (
-                    f"Your Save of {amount:,} Frw has been "
-                    "confirmed and added to your Saved Balance."
+                    f"Your {amount:,} Frw Save has been "
+                    "approved. The amount has been added "
+                    "to your account balance."
                 ),
                 now_iso(),
             ),
@@ -1720,17 +2192,27 @@ def confirm_cash_in(
             "success": True,
             "cash_in_id": cash_in_id,
             "amount": amount,
+            "plan": selected_plan,
             "referral_rewarded": referral_rewarded,
-            "message": "Cash In confirmed successfully.",
+            "message": (
+                "Save confirmed successfully."
+            ),
         }
 
     except Exception as error:
 
         conn.rollback()
 
+        print(
+            "SAVE CONFIRMATION ERROR:",
+            error,
+        )
+
         return {
             "success": False,
-            "message": "Cash In confirmation failed.",
+            "message": (
+                "Save confirmation failed."
+            ),
             "error": str(error),
         }
 
@@ -1746,13 +2228,19 @@ def confirm_cash_in(
 @app.route("/")
 def index():
 
-    if session.get("admin_logged_in"):
+    if session.get(
+        "admin_logged_in"
+    ):
 
         return redirect(
-            url_for("admin.admin_dashboard")
+            url_for(
+                "admin.admin_dashboard"
+            )
         )
 
-    if session.get("user_id"):
+    if session.get(
+        "user_id"
+    ):
 
         return redirect(
             url_for("home")
@@ -1790,81 +2278,99 @@ def home():
 
         conn = get_db()
 
-        if activity and activity["video_id"]:
+        try:
 
-            video = conn.execute(
-                """
-                SELECT *
-                FROM videos
-                WHERE id = ?
-                """,
-                (
-                    activity["video_id"],
-                ),
-            ).fetchone()
+            if activity and activity[
+                "video_id"
+            ]:
 
-        if activity and activity["task_id"]:
+                video = conn.execute(
+                    """
+                    SELECT *
+                    FROM videos
+                    WHERE id = ?
+                    """,
+                    (
+                        activity[
+                            "video_id"
+                        ],
+                    ),
+                ).fetchone()
 
-            task = conn.execute(
-                """
-                SELECT *
-                FROM tasks
-                WHERE id = ?
-                """,
-                (
-                    activity["task_id"],
-                ),
-            ).fetchone()
+            if activity and activity[
+                "task_id"
+            ]:
 
-            task_submission = conn.execute(
-                """
-                SELECT *
-                FROM task_submissions
-                WHERE user_id = ?
-                AND task_id = ?
-                AND activity_date = ?
-                """,
-                (
-                    user["id"],
-                    activity["task_id"],
-                    today_string(),
-                ),
-            ).fetchone()
+                task = conn.execute(
+                    """
+                    SELECT *
+                    FROM tasks
+                    WHERE id = ?
+                    """,
+                    (
+                        activity[
+                            "task_id"
+                        ],
+                    ),
+                ).fetchone()
 
-        conn.close()
+                task_submission = conn.execute(
+                    """
+                    SELECT *
+                    FROM task_submissions
+                    WHERE user_id = ?
+                    AND task_id = ?
+                    AND activity_date = ?
+                    """,
+                    (
+                        user["id"],
+                        activity[
+                            "task_id"
+                        ],
+                        today_string(),
+                    ),
+                ).fetchone()
+
+        finally:
+
+            conn.close()
 
     conn = get_db()
 
-    activity_count = conn.execute(
-        """
-        SELECT COUNT(*)
-        FROM transactions
-        WHERE user_id = ?
-        AND transaction_type IN
-        (
-            'VIDEO_REWARD',
-            'TASK_REWARD'
-        )
-        AND status = 'Completed'
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchone()[0]
+    try:
 
-    unread_notifications = conn.execute(
-        """
-        SELECT COUNT(*)
-        FROM notifications
-        WHERE user_id = ?
-        AND is_read = 0
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchone()[0]
+        activity_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM transactions
+            WHERE user_id = ?
+            AND transaction_type IN
+            (
+                'VIDEO_REWARD',
+                'TASK_REWARD'
+            )
+            AND status = 'Completed'
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
 
-    conn.close()
+        unread_notifications = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM notifications
+            WHERE user_id = ?
+            AND is_read = 0
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
+
+    finally:
+
+        conn.close()
 
     return render_template(
         "home.html",
@@ -1877,6 +2383,23 @@ def home():
         activity_count=activity_count,
         unread_notifications=unread_notifications,
         min_video_watch_seconds=MIN_VIDEO_WATCH_SECONDS,
+
+        # New plan information for templates.
+        plan_name=get_plan_name(
+            user["save_plan"]
+        ),
+        video_reward=get_video_reward_for_plan(
+            user["save_plan"]
+        ),
+        task_reward=get_task_reward_for_plan(
+            user["save_plan"]
+        ),
+        minimum_withdrawal=get_min_withdrawal_for_plan(
+            user["save_plan"]
+        ),
+        withdrawal_fee_percent=get_withdrawal_fee_percent(
+            user["save_plan"]
+        ),
     )
 
 
@@ -1890,17 +2413,28 @@ def home():
 )
 def register():
 
-    if session.get("admin_logged_in"):
+    if session.get(
+        "admin_logged_in"
+    ):
 
         return redirect(
-            url_for("admin.admin_dashboard")
+            url_for(
+                "admin.admin_dashboard"
+            )
         )
 
-    if session.get("user_id"):
+    if session.get(
+        "user_id"
+    ):
 
         return redirect(
             url_for("home")
         )
+
+    referral_from_url = request.args.get(
+        "ref",
+        "",
+    ).strip().upper()
 
     if request.method == "POST":
 
@@ -1921,7 +2455,7 @@ def register():
 
         referral_code = request.form.get(
             "referral_code",
-            "",
+            referral_from_url,
         ).strip().upper()
 
         if not phone:
@@ -1932,7 +2466,8 @@ def register():
             )
 
             return render_template(
-                "register.html"
+                "register.html",
+                referral_code=referral_code,
             )
 
         if len(password) < 6:
@@ -1943,7 +2478,8 @@ def register():
             )
 
             return render_template(
-                "register.html"
+                "register.html",
+                referral_code=referral_code,
             )
 
         if password != confirm_password:
@@ -1954,7 +2490,8 @@ def register():
             )
 
             return render_template(
-                "register.html"
+                "register.html",
+                referral_code=referral_code,
             )
 
         conn = get_db()
@@ -1980,7 +2517,8 @@ def register():
                 )
 
                 return render_template(
-                    "register.html"
+                    "register.html",
+                    referral_code=referral_code,
                 )
 
             referrer = None
@@ -1989,7 +2527,10 @@ def register():
 
                 referrer = conn.execute(
                     """
-                    SELECT id, phone, referral_code
+                    SELECT
+                        id,
+                        phone,
+                        referral_code
                     FROM users
                     WHERE referral_code = ?
                     AND is_active = 1
@@ -2007,7 +2548,8 @@ def register():
                     )
 
                     return render_template(
-                        "register.html"
+                        "register.html",
+                        referral_code=referral_code,
                     )
 
                 if referrer["phone"] == phone:
@@ -2018,13 +2560,18 @@ def register():
                     )
 
                     return render_template(
-                        "register.html"
+                        "register.html",
+                        referral_code=referral_code,
                     )
 
-            user_referral_code = generate_referral_code()
+            user_referral_code = (
+                generate_referral_code()
+            )
 
-            password_hash = generate_password_hash(
-                password
+            password_hash = (
+                generate_password_hash(
+                    password
+                )
             )
 
             created_at = now_iso()
@@ -2039,12 +2586,13 @@ def register():
                         password_hash,
                         referral_code,
                         referred_by,
+                        save_plan,
                         withdrawable_balance,
                         total_earned,
                         registration_bonus,
                         created_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     RETURNING id
                     """,
                     (
@@ -2056,6 +2604,7 @@ def register():
                             if referrer
                             else None
                         ),
+                        None,
                         REGISTRATION_BONUS,
                         REGISTRATION_BONUS,
                         REGISTRATION_BONUS,
@@ -2063,7 +2612,9 @@ def register():
                     ),
                 )
 
-                user_id = cursor.fetchone()["id"]
+                user_id = cursor.fetchone()[
+                    "id"
+                ]
 
             else:
 
@@ -2075,12 +2626,13 @@ def register():
                         password_hash,
                         referral_code,
                         referred_by,
+                        save_plan,
                         withdrawable_balance,
                         total_earned,
                         registration_bonus,
                         created_at
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         phone,
@@ -2091,6 +2643,7 @@ def register():
                             if referrer
                             else None
                         ),
+                        None,
                         REGISTRATION_BONUS,
                         REGISTRATION_BONUS,
                         REGISTRATION_BONUS,
@@ -2125,7 +2678,9 @@ def register():
                     "Welcome to KoraCash",
                     (
                         "You received a 1,500 Frw "
-                        "registration bonus."
+                        "Welcome Bonus. It is available "
+                        "for withdrawal according to "
+                        "the withdrawal rules."
                     ),
                     now_iso(),
                 ),
@@ -2171,11 +2726,10 @@ def register():
                         referrer["id"],
                         "New Referral",
                         (
-                            "A new user joined using your referral "
-                            "link. You will receive "
-                            f"{REFERRAL_BONUS:,} Frw after their "
-                            "confirmed Save reaches "
-                            f"{REFERRAL_REQUIRED_SAVE:,} Frw."
+                            "A new user joined using your "
+                            "referral link. You will receive "
+                            f"{REFERRAL_BONUS:,} Frw after "
+                            "their confirmed Save."
                         ),
                         now_iso(),
                     ),
@@ -2193,12 +2747,16 @@ def register():
             )
 
             flash(
-                "Registration could not be completed. Please try again.",
+                (
+                    "Registration could not be completed. "
+                    "Please try again."
+                ),
                 "danger",
             )
 
             return render_template(
-                "register.html"
+                "register.html",
+                referral_code=referral_code,
             )
 
         finally:
@@ -2206,7 +2764,10 @@ def register():
             conn.close()
 
         flash(
-            "Registration successful. You received 1,500 Frw.",
+            (
+                "Registration successful. "
+                "You received 1,500 Frw Welcome Bonus."
+            ),
             "success",
         )
 
@@ -2215,7 +2776,8 @@ def register():
         )
 
     return render_template(
-        "register.html"
+        "register.html",
+        referral_code=referral_from_url,
     )
 
 
@@ -2229,13 +2791,19 @@ def register():
 )
 def login():
 
-    if session.get("admin_logged_in"):
+    if session.get(
+        "admin_logged_in"
+    ):
 
         return redirect(
-            url_for("admin.admin_dashboard")
+            url_for(
+                "admin.admin_dashboard"
+            )
         )
 
-    if session.get("user_id"):
+    if session.get(
+        "user_id"
+    ):
 
         return redirect(
             url_for("home")
@@ -2294,11 +2862,18 @@ def login():
 
             session.clear()
 
-            session["admin_logged_in"] = True
-            session["admin_phone"] = phone
+            session[
+                "admin_logged_in"
+            ] = True
+
+            session[
+                "admin_phone"
+            ] = phone
 
             return redirect(
-                url_for("admin.admin_dashboard")
+                url_for(
+                    "admin.admin_dashboard"
+                )
             )
 
         # ----------------------------------------------------
@@ -2307,77 +2882,78 @@ def login():
 
         conn = get_db()
 
-        user = conn.execute(
-            """
-            SELECT *
-            FROM users
-            WHERE phone = ?
-            """,
-            (
-                phone,
-            ),
-        ).fetchone()
+        try:
 
-        if not user:
+            user = conn.execute(
+                """
+                SELECT *
+                FROM users
+                WHERE phone = ?
+                """,
+                (
+                    phone,
+                ),
+            ).fetchone()
+
+            if not user:
+
+                flash(
+                    "Invalid phone number or password.",
+                    "danger",
+                )
+
+                return render_template(
+                    "login.html"
+                )
+
+            if not user["is_active"]:
+
+                flash(
+                    "Your account is inactive.",
+                    "danger",
+                )
+
+                return render_template(
+                    "login.html"
+                )
+
+            if not check_password_hash(
+                user["password_hash"],
+                password,
+            ):
+
+                flash(
+                    "Invalid phone number or password.",
+                    "danger",
+                )
+
+                return render_template(
+                    "login.html"
+                )
+
+            conn.execute(
+                """
+                UPDATE users
+                SET last_login = ?
+                WHERE id = ?
+                """,
+                (
+                    now_iso(),
+                    user["id"],
+                ),
+            )
+
+            conn.commit()
+
+        finally:
 
             conn.close()
-
-            flash(
-                "Invalid phone number or password.",
-                "danger",
-            )
-
-            return render_template(
-                "login.html"
-            )
-
-        if not user["is_active"]:
-
-            conn.close()
-
-            flash(
-                "Your account is inactive.",
-                "danger",
-            )
-
-            return render_template(
-                "login.html"
-            )
-
-        if not check_password_hash(
-            user["password_hash"],
-            password,
-        ):
-
-            conn.close()
-
-            flash(
-                "Invalid phone number or password.",
-                "danger",
-            )
-
-            return render_template(
-                "login.html"
-            )
-
-        conn.execute(
-            """
-            UPDATE users
-            SET last_login = ?
-            WHERE id = ?
-            """,
-            (
-                now_iso(),
-                user["id"],
-            ),
-        )
-
-        conn.commit()
-        conn.close()
 
         session.clear()
 
-        session["user_id"] = user["id"]
+        session[
+            "user_id"
+        ] = user["id"]
 
         return redirect(
             url_for("home")
@@ -2422,7 +2998,7 @@ def logout():
 
 
 # ============================================================
-# CASH IN
+# CASH IN / SAVE
 # ============================================================
 
 @app.route(
@@ -2436,20 +3012,25 @@ def cash_in():
 
     if request.method == "POST":
 
-        amount_raw = request.form.get(
-            "amount",
-            "",
+        plan_raw = request.form.get(
+            "plan",
+            request.form.get(
+                "amount",
+                "",
+            ),
         ).strip()
 
-        try:
-            amount = int(amount_raw)
-        except (TypeError, ValueError):
-            amount = 0
+        selected_plan = normalize_plan(
+            plan_raw
+        )
 
-        if amount < 100:
+        if selected_plan not in ALLOWED_SAVE_PLANS:
 
             flash(
-                "Minimum Cash In amount is 100 Frw.",
+                (
+                    "Please select a valid Save plan: "
+                    "3,000 Frw or 6,000 Frw."
+                ),
                 "danger",
             )
 
@@ -2457,30 +3038,157 @@ def cash_in():
                 "cash_in.html",
                 user=user,
                 payment_number=PAYMENT_NUMBER,
+                plans=ALLOWED_SAVE_PLANS,
+            )
+
+        existing_plan = normalize_plan(
+            user["save_plan"]
+        )
+
+        # ----------------------------------------------------
+        # A user keeps one active plan.
+        # This prevents changing reward/fee rules midway.
+        # ----------------------------------------------------
+
+        if existing_plan and existing_plan != selected_plan:
+
+            flash(
+                (
+                    f"Your account is currently on "
+                    f"{get_plan_name(existing_plan)}. "
+                    "You cannot submit a different plan."
+                ),
+                "danger",
+            )
+
+            return redirect(
+                url_for("cash_in")
+            )
+
+        # ----------------------------------------------------
+        # PAYMENT PROOF
+        # ----------------------------------------------------
+
+        payment_proof = request.files.get(
+            "payment_proof"
+        )
+
+        if not payment_proof or not payment_proof.filename:
+
+            flash(
+                "Please upload your MoMo payment screenshot.",
+                "danger",
+            )
+
+            return redirect(
+                url_for("cash_in")
+            )
+
+        original_filename = payment_proof.filename.strip()
+
+        if "." not in original_filename:
+
+            flash(
+                "Please upload a valid image file.",
+                "danger",
+            )
+
+            return redirect(
+                url_for("cash_in")
+            )
+
+        extension = (
+            original_filename.rsplit(".", 1)[1]
+            .lower()
+        )
+
+        if extension not in ALLOWED_PAYMENT_PROOF_EXTENSIONS:
+
+            flash(
+                "Only JPG, JPEG, PNG, and WEBP images are allowed.",
+                "danger",
+            )
+
+            return redirect(
+                url_for("cash_in")
+            )
+
+        safe_original_filename = secure_filename(
+            original_filename
+        )
+
+        if not safe_original_filename:
+
+            flash(
+                "The uploaded file name is invalid.",
+                "danger",
+            )
+
+            return redirect(
+                url_for("cash_in")
             )
 
         conn = get_db()
 
+        saved_file_path = None
+
         try:
 
-            conn.execute(
+            # ------------------------------------------------
+            # Create the pending Save request first so we have
+            # its database ID for a unique proof filename.
+            # ------------------------------------------------
+
+            inserted = conn.execute(
                 """
                 INSERT INTO cash_ins
                 (
                     user_id,
                     amount,
+                    save_plan,
                     payment_number,
                     status,
                     created_at
                 )
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?)
+                RETURNING id
                 """,
                 (
                     user["id"],
-                    amount,
+                    selected_plan,
+                    selected_plan,
                     PAYMENT_NUMBER,
                     "Pending",
                     now_iso(),
+                ),
+            ).fetchone()
+
+            cash_in_id = inserted["id"]
+
+            unique_filename = (
+                f"cashin_{cash_in_id}_"
+                f"{secrets.token_hex(8)}."
+                f"{extension}"
+            )
+
+            saved_file_path = os.path.join(
+                PAYMENT_PROOF_DIR,
+                unique_filename,
+            )
+
+            payment_proof.save(
+                saved_file_path
+            )
+
+            conn.execute(
+                """
+                UPDATE cash_ins
+                SET payment_proof = ?
+                WHERE id = ?
+                """,
+                (
+                    unique_filename,
+                    cash_in_id,
                 ),
             )
 
@@ -2497,10 +3205,12 @@ def cash_in():
                 """,
                 (
                     user["id"],
-                    "Cash In Submitted",
+                    "Save Submitted",
                     (
-                        f"Your Cash In request of {amount:,} Frw "
-                        "is pending confirmation."
+                        f"Your {selected_plan:,} Frw "
+                        f"{get_plan_name(selected_plan)} "
+                        "Save request is pending admin "
+                        "confirmation."
                     ),
                     now_iso(),
                 ),
@@ -2508,12 +3218,27 @@ def cash_in():
 
             conn.commit()
 
-        except Exception:
+        except Exception as error:
 
             conn.rollback()
 
+            if saved_file_path and os.path.exists(
+                saved_file_path
+            ):
+                try:
+                    os.remove(
+                        saved_file_path
+                    )
+                except Exception:
+                    pass
+
+            print(
+                "SAVE SUBMISSION ERROR:",
+                error,
+            )
+
             flash(
-                "Cash In request could not be submitted.",
+                "Save request could not be submitted.",
                 "danger",
             )
 
@@ -2527,8 +3252,10 @@ def cash_in():
 
         flash(
             (
-                "Cash In request submitted. Complete the payment "
-                "and wait for confirmation."
+                f"{selected_plan:,} Frw Save request "
+                "submitted successfully. Your payment "
+                "screenshot has been uploaded and is "
+                "waiting for admin approval."
             ),
             "success",
         )
@@ -2539,31 +3266,36 @@ def cash_in():
 
     conn = get_db()
 
-    cash_ins = conn.execute(
-        """
-        SELECT *
-        FROM cash_ins
-        WHERE user_id = ?
-        ORDER BY id DESC
-        LIMIT 20
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchall()
+    try:
 
-    conn.close()
+        cash_ins = conn.execute(
+            """
+            SELECT *
+            FROM cash_ins
+            WHERE user_id = ?
+            ORDER BY id DESC
+            LIMIT 20
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchall()
+
+    finally:
+
+        conn.close()
 
     return render_template(
         "cash_in.html",
         user=user,
         payment_number=PAYMENT_NUMBER,
         cash_ins=cash_ins,
+        plans=ALLOWED_SAVE_PLANS,
     )
 
 
 # ============================================================
-# CASH OUT
+# CASH OUT / WITHDRAWAL
 # ============================================================
 
 @app.route(
@@ -2575,33 +3307,36 @@ def cash_out():
 
     user = current_user()
 
-    lock_until = get_withdrawal_lock(user)
+    plan = normalize_plan(
+        user["save_plan"]
+    )
+
+    minimum_withdrawal = (
+        get_min_withdrawal_for_plan(
+            plan
+        )
+    )
+
+    fee_percent = (
+        get_withdrawal_fee_percent(
+            plan
+        )
+    )
 
     if request.method == "POST":
 
-        if lock_until:
+        # ----------------------------------------------------
+        # No withdrawal lock anymore.
+        # ----------------------------------------------------
 
-            remaining = (
-                lock_until - now_utc()
-            )
-
-            days = remaining.days
-
-            hours = (
-                remaining.seconds // 3600
-            )
-
-            minutes = (
-                (remaining.seconds % 3600)
-                // 60
-            )
+        if not plan:
 
             flash(
                 (
-                    "Withdrawal locked. Time remaining: "
-                    f"{days}d {hours}h {minutes}m."
+                    "Please complete and get approval "
+                    "for a Save plan before withdrawing."
                 ),
-                "warning",
+                "danger",
             )
 
             return redirect(
@@ -2624,14 +3359,23 @@ def cash_out():
         ).strip()
 
         try:
-            amount = int(amount_raw)
+
+            amount = int(
+                amount_raw
+            )
+
         except (TypeError, ValueError):
+
             amount = 0
 
-        if amount <= 0:
+        if amount < minimum_withdrawal:
 
             flash(
-                "Enter a valid withdrawal amount.",
+                (
+                    f"Minimum withdrawal for "
+                    f"{get_plan_name(plan)} is "
+                    f"{minimum_withdrawal:,} Frw."
+                ),
                 "danger",
             )
 
@@ -2664,7 +3408,40 @@ def cash_out():
                 url_for("cash_out")
             )
 
-        if amount > user["withdrawable_balance"]:
+        # Basic Rwanda phone validation.
+        normalized_phone = (
+            phone
+            .replace(" ", "")
+            .replace("-", "")
+        )
+
+        if normalized_phone.startswith(
+            "+250"
+        ):
+
+            normalized_phone = (
+                "0"
+                + normalized_phone[4:]
+            )
+
+        if (
+            not normalized_phone.isdigit()
+            or len(normalized_phone) != 10
+            or not normalized_phone.startswith("07")
+        ):
+
+            flash(
+                "Please enter a valid Rwanda phone number.",
+                "danger",
+            )
+
+            return redirect(
+                url_for("cash_out")
+            )
+
+        if amount > user[
+            "withdrawable_balance"
+        ]:
 
             flash(
                 (
@@ -2678,70 +3455,155 @@ def cash_out():
                 url_for("cash_out")
             )
 
+        fee = calculate_withdrawal_fee(
+            amount,
+            plan,
+        )
+
+        net_amount = (
+            amount - fee
+        )
+
+        if net_amount <= 0:
+
+            flash(
+                "The withdrawal amount is invalid.",
+                "danger",
+            )
+
+            return redirect(
+                url_for("cash_out")
+            )
+
         conn = get_db()
 
         try:
 
-            new_lock = (
-                now_utc()
-                + timedelta(
-                    days=WITHDRAWAL_LOCK_DAYS
-                )
-            )
+            # ------------------------------------------------
+            # Reserve the gross withdrawal amount.
+            #
+            # total_withdrawn is NOT increased yet.
+            # It increases only after admin completion.
+            # ------------------------------------------------
 
-            conn.execute(
+            updated = conn.execute(
                 """
                 UPDATE users
                 SET
                     withdrawable_balance =
-                        withdrawable_balance - ?,
-
-                    total_withdrawn =
-                        total_withdrawn + ?,
-
-                    withdrawal_locked_until = ?
+                        withdrawable_balance - ?
 
                 WHERE id = ?
+
+                AND withdrawable_balance >= ?
                 """,
                 (
                     amount,
-                    amount,
-                    new_lock.isoformat(),
                     user["id"],
+                    amount,
                 ),
             )
 
-            conn.execute(
+            if updated.rowcount != 1:
+
+                conn.rollback()
+
+                flash(
+                    (
+                        "Your balance changed before the "
+                        "withdrawal could be submitted. "
+                        "Please try again."
+                    ),
+                    "warning",
+                )
+
+                return redirect(
+                    url_for("cash_out")
+                )
+
+            withdrawal_cursor = conn.execute(
                 """
                 INSERT INTO withdrawals
                 (
                     user_id,
                     amount,
+                    fee,
+                    net_amount,
                     network,
                     phone,
                     status,
                     created_at
                 )
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                RETURNING id
                 """,
                 (
                     user["id"],
                     amount,
+                    fee,
+                    net_amount,
                     network,
-                    phone,
+                    normalized_phone,
                     "Pending",
                     now_iso(),
                 ),
             )
+
+            withdrawal_id = (
+                withdrawal_cursor.fetchone()[
+                    "id"
+                ]
+                if DATABASE_URL
+                else None
+            )
+
+            # ------------------------------------------------
+            # SQLite does not use RETURNING in this code path
+            # ------------------------------------------------
+
+            if not DATABASE_URL:
+
+                withdrawal_id = conn.execute(
+                    """
+                    SELECT id
+                    FROM withdrawals
+                    WHERE user_id = ?
+                    ORDER BY id DESC
+                    LIMIT 1
+                    """,
+                    (
+                        user["id"],
+                    ),
+                ).fetchone()["id"]
 
             create_transaction(
                 conn,
                 user["id"],
                 "WITHDRAWAL",
                 amount,
-                f"{network} withdrawal to {phone}",
+                (
+                    f"{network} withdrawal request "
+                    f"of {amount:,} Frw. "
+                    f"Fee: {fee:,} Frw. "
+                    f"Net: {net_amount:,} Frw."
+                ),
                 status="Pending",
             )
+
+            # Separate fee ledger entry for accounting.
+            if fee > 0:
+
+                create_transaction(
+                    conn,
+                    user["id"],
+                    "WITHDRAWAL_FEE",
+                    fee,
+                    (
+                        f"{fee_percent}% withdrawal fee "
+                        f"for withdrawal #{withdrawal_id}."
+                    ),
+                    status="Pending",
+                )
 
             conn.execute(
                 """
@@ -2758,8 +3620,10 @@ def cash_out():
                     user["id"],
                     "Withdrawal Submitted",
                     (
-                        f"Your {amount:,} Frw withdrawal "
-                        "request is pending."
+                        f"Requested: {amount:,} Frw. "
+                        f"Fee: {fee:,} Frw. "
+                        f"Net payout: {net_amount:,} Frw. "
+                        "Your request is pending admin processing."
                     ),
                     now_iso(),
                 ),
@@ -2767,9 +3631,14 @@ def cash_out():
 
             conn.commit()
 
-        except Exception:
+        except Exception as error:
 
             conn.rollback()
+
+            print(
+                "WITHDRAWAL SUBMISSION ERROR:",
+                error,
+            )
 
             flash(
                 "Withdrawal request could not be submitted.",
@@ -2785,7 +3654,12 @@ def cash_out():
             conn.close()
 
         flash(
-            "Withdrawal request submitted successfully.",
+            (
+                f"Withdrawal submitted. "
+                f"Requested {amount:,} Frw, "
+                f"fee {fee:,} Frw, "
+                f"net payout {net_amount:,} Frw."
+            ),
             "success",
         )
 
@@ -2795,26 +3669,37 @@ def cash_out():
 
     conn = get_db()
 
-    withdrawals = conn.execute(
-        """
-        SELECT *
-        FROM withdrawals
-        WHERE user_id = ?
-        ORDER BY id DESC
-        LIMIT 20
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchall()
+    try:
 
-    conn.close()
+        withdrawals = conn.execute(
+            """
+            SELECT *
+            FROM withdrawals
+            WHERE user_id = ?
+            ORDER BY id DESC
+            LIMIT 20
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchall()
+
+    finally:
+
+        conn.close()
 
     return render_template(
         "cash_out.html",
         user=user,
         withdrawals=withdrawals,
-        lock_until=lock_until,
+
+        # Compatibility.
+        lock_until=None,
+
+        plan_name=get_plan_name(plan),
+        minimum_withdrawal=minimum_withdrawal,
+        withdrawal_fee_percent=fee_percent,
+        fee_percent=fee_percent,
     )
 
 
@@ -2834,36 +3719,40 @@ def activities():
 
     conn = get_db()
 
-    activity_count = conn.execute(
-        """
-        SELECT COUNT(*)
-        FROM transactions
-        WHERE user_id = ?
-        AND transaction_type IN
-        (
-            'VIDEO_REWARD',
-            'TASK_REWARD'
-        )
-        AND status = 'Completed'
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchone()[0]
+    try:
 
-    unread_notifications = conn.execute(
-        """
-        SELECT COUNT(*)
-        FROM notifications
-        WHERE user_id = ?
-        AND is_read = 0
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchone()[0]
+        activity_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM transactions
+            WHERE user_id = ?
+            AND transaction_type IN
+            (
+                'VIDEO_REWARD',
+                'TASK_REWARD'
+            )
+            AND status = 'Completed'
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
 
-    conn.close()
+        unread_notifications = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM notifications
+            WHERE user_id = ?
+            AND is_read = 0
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
+
+    finally:
+
+        conn.close()
 
     if not unlocked:
 
@@ -2878,6 +3767,18 @@ def activities():
             activity_count=activity_count,
             unread_notifications=unread_notifications,
             min_video_watch_seconds=MIN_VIDEO_WATCH_SECONDS,
+
+            plan_name=get_plan_name(
+                user["save_plan"]
+            ),
+            video_reward=0,
+            task_reward=0,
+            minimum_withdrawal=get_min_withdrawal_for_plan(
+                user["save_plan"]
+            ),
+            withdrawal_fee_percent=get_withdrawal_fee_percent(
+                user["save_plan"]
+            ),
         )
 
     activity = get_or_create_daily_activity(
@@ -2886,52 +3787,66 @@ def activities():
 
     conn = get_db()
 
-    video = None
-    task = None
-    task_submission = None
+    try:
 
-    if activity and activity["video_id"]:
+        video = None
+        task = None
+        task_submission = None
 
-        video = conn.execute(
-            """
-            SELECT *
-            FROM videos
-            WHERE id = ?
-            """,
-            (
-                activity["video_id"],
-            ),
-        ).fetchone()
+        if activity and activity[
+            "video_id"
+        ]:
 
-    if activity and activity["task_id"]:
+            video = conn.execute(
+                """
+                SELECT *
+                FROM videos
+                WHERE id = ?
+                """,
+                (
+                    activity[
+                        "video_id"
+                    ],
+                ),
+            ).fetchone()
 
-        task = conn.execute(
-            """
-            SELECT *
-            FROM tasks
-            WHERE id = ?
-            """,
-            (
-                activity["task_id"],
-            ),
-        ).fetchone()
+        if activity and activity[
+            "task_id"
+        ]:
 
-        task_submission = conn.execute(
-            """
-            SELECT *
-            FROM task_submissions
-            WHERE user_id = ?
-            AND task_id = ?
-            AND activity_date = ?
-            """,
-            (
-                user["id"],
-                activity["task_id"],
-                today_string(),
-            ),
-        ).fetchone()
+            task = conn.execute(
+                """
+                SELECT *
+                FROM tasks
+                WHERE id = ?
+                """,
+                (
+                    activity[
+                        "task_id"
+                    ],
+                ),
+            ).fetchone()
 
-    conn.close()
+            task_submission = conn.execute(
+                """
+                SELECT *
+                FROM task_submissions
+                WHERE user_id = ?
+                AND task_id = ?
+                AND activity_date = ?
+                """,
+                (
+                    user["id"],
+                    activity[
+                        "task_id"
+                    ],
+                    today_string(),
+                ),
+            ).fetchone()
+
+    finally:
+
+        conn.close()
 
     return render_template(
         "home.html",
@@ -2944,6 +3859,22 @@ def activities():
         activity_count=activity_count,
         unread_notifications=unread_notifications,
         min_video_watch_seconds=MIN_VIDEO_WATCH_SECONDS,
+
+        plan_name=get_plan_name(
+            user["save_plan"]
+        ),
+        video_reward=get_video_reward_for_plan(
+            user["save_plan"]
+        ),
+        task_reward=get_task_reward_for_plan(
+            user["save_plan"]
+        ),
+        minimum_withdrawal=get_min_withdrawal_for_plan(
+            user["save_plan"]
+        ),
+        withdrawal_fee_percent=get_withdrawal_fee_percent(
+            user["save_plan"]
+        ),
     )
 
 
@@ -2960,18 +3891,55 @@ def confirm_video():
 
     user = current_user()
 
-    if not has_saved_money(user["id"]):
+    plan = normalize_plan(
+        user["save_plan"]
+    )
+
+    if not has_saved_money(
+        user["id"]
+    ):
 
         return jsonify(
             {
                 "success": False,
-                "message": "Complete a Cash In first.",
+                "message": (
+                    "Complete an approved Save first."
+                ),
+            }
+        ), 403
+
+    if not plan:
+
+        return jsonify(
+            {
+                "success": False,
+                "message": (
+                    "Your account does not have an active Save plan."
+                ),
+            }
+        ), 403
+
+    reward = get_video_reward_for_plan(
+        plan
+    )
+
+    if reward <= 0:
+
+        return jsonify(
+            {
+                "success": False,
+                "message": "Your Save plan is invalid.",
             }
         ), 403
 
     conn = get_db()
 
     try:
+
+        # Prevent concurrent duplicate rewards.
+        conn.execute(
+            "BEGIN IMMEDIATE"
+        )
 
         activity = conn.execute(
             """
@@ -2988,28 +3956,44 @@ def confirm_video():
 
         if not activity:
 
+            conn.rollback()
+
             return jsonify(
                 {
                     "success": False,
-                    "message": "Today's activity is not available.",
+                    "message": (
+                        "Today's activity is not available."
+                    ),
                 }
             ), 404
 
-        if activity["video_completed"]:
+        if activity[
+            "video_completed"
+        ]:
+
+            conn.rollback()
 
             return jsonify(
                 {
                     "success": False,
-                    "message": "Today's video is already completed.",
+                    "message": (
+                        "Today's video is already completed."
+                    ),
                 }
             ), 400
 
-        if activity["video_rewarded"]:
+        if activity[
+            "video_rewarded"
+        ]:
+
+            conn.rollback()
 
             return jsonify(
                 {
                     "success": False,
-                    "message": "Today's video reward was already given.",
+                    "message": (
+                        "Today's video reward was already given."
+                    ),
                 }
             ), 400
 
@@ -3021,22 +4005,24 @@ def confirm_video():
             AND is_active = 1
             """,
             (
-                activity["video_id"],
+                activity[
+                    "video_id"
+                ],
             ),
         ).fetchone()
 
         if not video:
 
+            conn.rollback()
+
             return jsonify(
                 {
                     "success": False,
-                    "message": "Today's video is unavailable.",
+                    "message": (
+                        "Today's video is unavailable."
+                    ),
                 }
             ), 404
-
-        # ----------------------------------------------------
-        # Accept form OR JSON
-        # ----------------------------------------------------
 
         payload = request.get_json(
             silent=True
@@ -3064,6 +4050,8 @@ def confirm_video():
 
         if watch_seconds < MIN_VIDEO_WATCH_SECONDS:
 
+            conn.rollback()
+
             return jsonify(
                 {
                     "success": False,
@@ -3073,11 +4061,6 @@ def confirm_video():
                     ),
                 }
             ), 400
-
-        reward = int(
-            video["reward"]
-            or VIDEO_REWARD
-        )
 
         updated = conn.execute(
             """
@@ -3104,8 +4087,8 @@ def confirm_video():
                 {
                     "success": False,
                     "message": (
-                        "Today's video reward has already "
-                        "been processed."
+                        "Today's video reward has "
+                        "already been processed."
                     ),
                 }
             ), 400
@@ -3134,7 +4117,10 @@ def confirm_video():
             user["id"],
             "VIDEO_REWARD",
             reward,
-            "Daily video reward",
+            (
+                f"Daily video reward - "
+                f"{get_plan_name(plan)}"
+            ),
             status="Completed",
         )
 
@@ -3154,7 +4140,8 @@ def confirm_video():
                 "Video Reward",
                 (
                     f"You earned {reward:,} Frw "
-                    "from today's video."
+                    f"from today's video "
+                    f"({get_plan_name(plan)})."
                 ),
                 now_iso(),
             ),
@@ -3166,6 +4153,7 @@ def confirm_video():
             {
                 "success": True,
                 "reward": reward,
+                "plan": plan,
                 "message": (
                     f"Video completed. "
                     f"{reward:,} Frw added."
@@ -3197,7 +4185,7 @@ def confirm_video():
 
 
 # ============================================================
-# AUTOMATIC MULTIPLE-CHOICE TASK ENGINE
+# TASK SUBMISSION
 # ============================================================
 
 @app.route(
@@ -3209,19 +4197,37 @@ def submit_task():
 
     user = current_user()
 
-    if not has_saved_money(user["id"]):
+    plan = normalize_plan(
+        user["save_plan"]
+    )
+
+    if not has_saved_money(
+        user["id"]
+    ):
 
         return jsonify(
             {
                 "success": False,
-                "message": "Complete a Cash In first.",
+                "message": (
+                    "Complete an approved Save first."
+                ),
             }
         ), 403
 
-    # --------------------------------------------------------
-    # IMPORTANT:
-    # Accept both HTML form and JSON.
-    # --------------------------------------------------------
+    if not plan:
+
+        return jsonify(
+            {
+                "success": False,
+                "message": (
+                    "Your account does not have an active Save plan."
+                ),
+            }
+        ), 403
+
+    reward = get_task_reward_for_plan(
+        plan
+    )
 
     payload = request.get_json(
         silent=True
@@ -3229,7 +4235,10 @@ def submit_task():
 
     answer = (
         request.form.get("answer")
-        or payload.get("answer", "")
+        or payload.get(
+            "answer",
+            "",
+        )
     )
 
     answer = str(
@@ -3288,7 +4297,9 @@ def submit_task():
                 }
             ), 404
 
-        if not activity["task_id"]:
+        if not activity[
+            "task_id"
+        ]:
 
             conn.rollback()
 
@@ -3301,7 +4312,9 @@ def submit_task():
                 }
             ), 404
 
-        if activity["task_completed"]:
+        if activity[
+            "task_completed"
+        ]:
 
             conn.rollback()
 
@@ -3314,7 +4327,9 @@ def submit_task():
                 }
             ), 400
 
-        if activity["task_rewarded"]:
+        if activity[
+            "task_rewarded"
+        ]:
 
             conn.rollback()
 
@@ -3335,7 +4350,9 @@ def submit_task():
             AND is_active = 1
             """,
             (
-                activity["task_id"],
+                activity[
+                    "task_id"
+                ],
             ),
         ).fetchone()
 
@@ -3352,8 +4369,12 @@ def submit_task():
                 }
             ), 404
 
-        if not task["option_a"] or not task["option_b"] \
-                or not task["option_c"] or not task["option_d"]:
+        if (
+            not task["option_a"]
+            or not task["option_b"]
+            or not task["option_c"]
+            or not task["option_d"]
+        ):
 
             conn.rollback()
 
@@ -3367,7 +4388,8 @@ def submit_task():
             ), 500
 
         correct_answer = str(
-            task["correct_answer"] or ""
+            task["correct_answer"]
+            or ""
         ).strip().upper()
 
         if correct_answer not in (
@@ -3413,7 +4435,9 @@ def submit_task():
                     "message": (
                         "You have already answered today's task."
                     ),
-                    "status": existing["status"],
+                    "status": existing[
+                        "status"
+                    ],
                 }
             ), 400
 
@@ -3422,11 +4446,6 @@ def submit_task():
         )
 
         if is_correct:
-
-            reward = int(
-                task["reward"]
-                or TASK_REWARD
-            )
 
             status = "Approved"
 
@@ -3443,10 +4462,6 @@ def submit_task():
             reviewer_note = (
                 "Automatically rejected: incorrect answer."
             )
-
-        # ----------------------------------------------------
-        # Store submission
-        # ----------------------------------------------------
 
         conn.execute(
             """
@@ -3475,10 +4490,6 @@ def submit_task():
             ),
         )
 
-        # ----------------------------------------------------
-        # CORRECT ANSWER
-        # ----------------------------------------------------
-
         if is_correct:
 
             updated = conn.execute(
@@ -3506,7 +4517,8 @@ def submit_task():
                     {
                         "success": False,
                         "message": (
-                            "Task reward has already been processed."
+                            "Task reward has already "
+                            "been processed."
                         ),
                     }
                 ), 400
@@ -3535,7 +4547,10 @@ def submit_task():
                 user["id"],
                 "TASK_REWARD",
                 reward,
-                "Correct answer - daily task reward",
+                (
+                    f"Correct answer - daily task reward "
+                    f"({get_plan_name(plan)})"
+                ),
                 status="Completed",
             )
 
@@ -3648,24 +4663,6 @@ def submit_task():
             }
         )
 
-    except (sqlite3.IntegrityError, psycopg.errors.UniqueViolation) as error:
-
-        conn.rollback()
-
-        print(
-            "TASK INTEGRITY ERROR:",
-            error,
-        )
-
-        return jsonify(
-            {
-                "success": False,
-                "message": (
-                    "You have already answered today's task."
-                ),
-            }
-        ), 400
-
     except Exception as error:
 
         conn.rollback()
@@ -3681,7 +4678,6 @@ def submit_task():
                 "message": (
                     "Task could not be processed."
                 ),
-                "error": str(error),
             }
         ), 500
 
@@ -3713,18 +4709,150 @@ def admin_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
 
-        if not session.get("admin_logged_in"):
+        if not session.get(
+            "admin_logged_in"
+        ):
 
             return redirect(
                 url_for("login")
             )
 
-        return view(*args, **kwargs)
+        return view(
+            *args,
+            **kwargs
+        )
 
     return wrapped
 
 
 # ============================================================
+# ADMIN SAVE REQUESTS
+# ============================================================
+
+@app.route(
+    "/admin/save-requests",
+    methods=["GET"],
+)
+@admin_required
+def admin_save_requests():
+
+    conn = get_db()
+
+    try:
+
+        save_requests = conn.execute(
+            """
+            SELECT
+                ci.*,
+                u.phone AS user_phone,
+                u.save_plan AS user_save_plan
+            FROM cash_ins ci
+            JOIN users u
+                ON u.id = ci.user_id
+            ORDER BY ci.id DESC
+            """
+        ).fetchall()
+
+    finally:
+
+        conn.close()
+
+    return render_template(
+        "admin_save_requests.html",
+        save_requests=save_requests,
+    )
+
+
+# ============================================================
+
+# ============================================================
+# ADMIN SAVE REQUEST ACTIONS
+# ============================================================
+
+@app.route("/admin/save-requests/<int:cash_in_id>/approve", methods=["POST"])
+@admin_required
+def approve_cash_in(cash_in_id):
+
+    result = confirm_cash_in(cash_in_id)
+
+    if isinstance(result, dict):
+        if result.get("success"):
+            return redirect(url_for("admin_save_requests"))
+
+        return f"""
+        <h2>Save Approval Failed</h2>
+        <p>{result.get("message", "Unable to approve Save request.")}</p>
+        <p><a href="{url_for("admin_save_requests")}">Back to Save Requests</a></p>
+        """
+
+    return redirect(url_for("admin_save_requests"))
+
+
+@app.route("/admin/save-requests/<int:cash_in_id>/reject", methods=["POST"])
+@admin_required
+def reject_cash_in(cash_in_id):
+
+    conn = get_db()
+
+    try:
+        cash_in = conn.execute(
+            """
+            SELECT *
+            FROM cash_ins
+            WHERE id = ?
+            """,
+            (cash_in_id,),
+        ).fetchone()
+
+        if not cash_in:
+            return f"""
+            <h2>Save Request Not Found</h2>
+            <p><a href="{url_for("admin_save_requests")}">Back to Save Requests</a></p>
+            """
+
+        if str(cash_in["status"]).lower() != "pending":
+            return f"""
+            <h2>Request Already Processed</h2>
+            <p>This Save request is no longer Pending.</p>
+            <p><a href="{url_for("admin_save_requests")}">Back to Save Requests</a></p>
+            """
+
+        conn.execute(
+            """
+            UPDATE cash_ins
+            SET status = 'Rejected',
+                confirmed_at = ?
+            WHERE id = ?
+            """,
+            (now_iso(), cash_in_id),
+        )
+
+        conn.execute(
+            """
+            INSERT INTO notifications
+            (user_id, title, message, created_at, is_read)
+            VALUES (?, ?, ?, ?, 0)
+            """,
+            (
+                cash_in["user_id"],
+                "Save Rejected",
+                f"Your Save request of {cash_in['amount']} Frw was rejected after manual payment review.",
+                now_iso(),
+            ),
+        )
+
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        conn.close()
+
+    return redirect(url_for("admin_save_requests"))
+
+
 # ADMIN TASK SUBMISSIONS
 # ============================================================
 
@@ -3737,29 +4865,36 @@ def admin_task_submissions():
 
     conn = get_db()
 
-    submissions = conn.execute(
-        """
-        SELECT
-            ts.*,
+    try:
 
-            u.phone AS user_phone,
+        submissions = conn.execute(
+            """
+            SELECT
+                ts.*,
 
-            t.title AS task_title,
-            t.reward AS task_reward
+                u.phone AS user_phone,
 
-        FROM task_submissions ts
+                u.save_plan AS user_save_plan,
 
-        JOIN users u
-            ON u.id = ts.user_id
+                t.title AS task_title,
 
-        JOIN tasks t
-            ON t.id = ts.task_id
+                t.reward AS task_reward
 
-        ORDER BY ts.id DESC
-        """
-    ).fetchall()
+            FROM task_submissions ts
 
-    conn.close()
+            JOIN users u
+                ON u.id = ts.user_id
+
+            JOIN tasks t
+                ON t.id = ts.task_id
+
+            ORDER BY ts.id DESC
+            """
+        ).fetchall()
+
+    finally:
+
+        conn.close()
 
     return render_template(
         "admin_task_submissions.html",
@@ -3788,8 +4923,12 @@ def approve_task_submission(
             """
             SELECT
                 ts.*,
-                t.reward AS task_reward,
-                u.phone AS user_phone
+
+                u.phone AS user_phone,
+
+                u.save_plan AS user_save_plan,
+
+                t.reward AS task_reward
 
             FROM task_submissions ts
 
@@ -3814,10 +4953,14 @@ def approve_task_submission(
             )
 
             return redirect(
-                url_for("admin_task_submissions")
+                url_for(
+                    "admin_task_submissions"
+                )
             )
 
-        if submission["status"] != "Pending":
+        if submission[
+            "status"
+        ] != "Pending":
 
             flash(
                 "This submission has already been reviewed.",
@@ -3825,13 +4968,35 @@ def approve_task_submission(
             )
 
             return redirect(
-                url_for("admin_task_submissions")
+                url_for(
+                    "admin_task_submissions"
+                )
             )
 
-        reward = int(
-            submission["task_reward"]
-            or TASK_REWARD
+        plan = normalize_plan(
+            submission[
+                "user_save_plan"
+            ]
         )
+
+        reward = get_task_reward_for_plan(
+            plan
+        )
+
+        if reward <= 0:
+
+            flash(
+                (
+                    "User does not have a valid Save plan."
+                ),
+                "danger",
+            )
+
+            return redirect(
+                url_for(
+                    "admin_task_submissions"
+                )
+            )
 
         updated = conn.execute(
             """
@@ -3848,9 +5013,15 @@ def approve_task_submission(
             AND task_rewarded = 0
             """,
             (
-                submission["user_id"],
-                submission["task_id"],
-                submission["activity_date"],
+                submission[
+                    "user_id"
+                ],
+                submission[
+                    "task_id"
+                ],
+                submission[
+                    "activity_date"
+                ],
             ),
         )
 
@@ -3864,13 +5035,14 @@ def approve_task_submission(
             )
 
             return redirect(
-                url_for("admin_task_submissions")
+                url_for(
+                    "admin_task_submissions"
+                )
             )
 
         conn.execute(
             """
             UPDATE users
-
             SET
                 withdrawable_balance =
                     withdrawable_balance + ?,
@@ -3883,16 +5055,23 @@ def approve_task_submission(
             (
                 reward,
                 reward,
-                submission["user_id"],
+                submission[
+                    "user_id"
+                ],
             ),
         )
 
         create_transaction(
             conn,
-            submission["user_id"],
+            submission[
+                "user_id"
+            ],
             "TASK_REWARD",
             reward,
-            "Approved daily task reward",
+            (
+                "Approved daily task reward "
+                f"({get_plan_name(plan)})"
+            ),
             status="Completed",
         )
 
@@ -3927,7 +5106,9 @@ def approve_task_submission(
             VALUES (?, ?, ?, ?)
             """,
             (
-                submission["user_id"],
+                submission[
+                    "user_id"
+                ],
                 "Task Reward",
                 (
                     f"Your task was approved. "
@@ -3966,7 +5147,9 @@ def approve_task_submission(
         conn.close()
 
     return redirect(
-        url_for("admin_task_submissions")
+        url_for(
+            "admin_task_submissions"
+        )
     )
 
 
@@ -4006,10 +5189,14 @@ def reject_task_submission(
             )
 
             return redirect(
-                url_for("admin_task_submissions")
+                url_for(
+                    "admin_task_submissions"
+                )
             )
 
-        if submission["status"] != "Pending":
+        if submission[
+            "status"
+        ] != "Pending":
 
             flash(
                 "This submission has already been reviewed.",
@@ -4017,7 +5204,9 @@ def reject_task_submission(
             )
 
             return redirect(
-                url_for("admin_task_submissions")
+                url_for(
+                    "admin_task_submissions"
+                )
             )
 
         reviewer_note = request.form.get(
@@ -4062,7 +5251,9 @@ def reject_task_submission(
             VALUES (?, ?, ?, ?)
             """,
             (
-                submission["user_id"],
+                submission[
+                    "user_id"
+                ],
                 "Task Submission Rejected",
                 (
                     "Your daily task submission was rejected. "
@@ -4098,7 +5289,9 @@ def reject_task_submission(
         conn.close()
 
     return redirect(
-        url_for("admin_task_submissions")
+        url_for(
+            "admin_task_submissions"
+        )
     )
 
 
@@ -4114,39 +5307,47 @@ def profile():
 
     conn = get_db()
 
-    referral_count = conn.execute(
-        """
-        SELECT COUNT(*)
-        FROM referrals
-        WHERE referrer_id = ?
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchone()[0]
+    try:
 
-    referral_earnings = conn.execute(
-        """
-        SELECT COALESCE(
-            SUM(amount),
-            0
-        )
-        FROM transactions
-        WHERE user_id = ?
-        AND transaction_type = 'REFERRAL_BONUS'
-        AND status = 'Completed'
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchone()[0]
+        referral_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM referrals
+            WHERE referrer_id = ?
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
 
-    conn.close()
+        referral_earnings = conn.execute(
+            """
+            SELECT COALESCE(
+                SUM(amount),
+                0
+            )
+            FROM transactions
+            WHERE user_id = ?
+            AND transaction_type = 'REFERRAL_BONUS'
+            AND status = 'Completed'
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
+
+    finally:
+
+        conn.close()
 
     referral_link = (
         request.host_url.rstrip("/")
         + "/register?ref="
         + user["referral_code"]
+    )
+
+    plan = normalize_plan(
+        user["save_plan"]
     )
 
     return render_template(
@@ -4155,6 +5356,22 @@ def profile():
         referral_count=referral_count,
         referral_earnings=referral_earnings,
         referral_link=referral_link,
+
+        plan_name=get_plan_name(
+            plan
+        ),
+        video_reward=get_video_reward_for_plan(
+            plan
+        ),
+        task_reward=get_task_reward_for_plan(
+            plan
+        ),
+        minimum_withdrawal=get_min_withdrawal_for_plan(
+            plan
+        ),
+        withdrawal_fee_percent=get_withdrawal_fee_percent(
+            plan
+        ),
     )
 
 
@@ -4233,20 +5450,25 @@ def change_password():
 
         conn = get_db()
 
-        conn.execute(
-            """
-            UPDATE users
-            SET password_hash = ?
-            WHERE id = ?
-            """,
-            (
-                new_hash,
-                user["id"],
-            ),
-        )
+        try:
 
-        conn.commit()
-        conn.close()
+            conn.execute(
+                """
+                UPDATE users
+                SET password_hash = ?
+                WHERE id = ?
+                """,
+                (
+                    new_hash,
+                    user["id"],
+                ),
+            )
+
+            conn.commit()
+
+        finally:
+
+            conn.close()
 
         flash(
             "Password changed successfully.",
@@ -4274,37 +5496,112 @@ def notifications():
 
     conn = get_db()
 
-    notifications_list = conn.execute(
-        """
-        SELECT *
-        FROM notifications
-        WHERE user_id = ?
-        ORDER BY id DESC
-        LIMIT 50
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchall()
+    try:
 
-    conn.execute(
-        """
-        UPDATE notifications
-        SET is_read = 1
-        WHERE user_id = ?
-        """,
-        (
-            user["id"],
-        ),
-    )
+        notifications_list = conn.execute(
+            """
+            SELECT *
+            FROM notifications
+            WHERE user_id = ?
+            ORDER BY id DESC
+            LIMIT 50
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchall()
 
-    conn.commit()
-    conn.close()
+        conn.execute(
+            """
+            UPDATE notifications
+            SET is_read = 1
+            WHERE user_id = ?
+            """,
+            (
+                user["id"],
+            ),
+        )
+
+        conn.commit()
+
+    finally:
+
+        conn.close()
 
     return render_template(
         "notifications.html",
         user=user,
         notifications=notifications_list,
+    )
+
+
+# ============================================================
+# NOTIFICATION API
+# ============================================================
+
+@app.route("/api/notifications")
+@login_required
+def api_notifications():
+
+    user = current_user()
+
+    conn = get_db()
+
+    try:
+
+        rows = conn.execute(
+            """
+            SELECT
+                id,
+                title,
+                message,
+                is_read,
+                created_at
+            FROM notifications
+            WHERE user_id = ?
+            ORDER BY id DESC
+            LIMIT 50
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchall()
+
+        unread = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM notifications
+            WHERE user_id = ?
+            AND is_read = 0
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
+
+    finally:
+
+        conn.close()
+
+    return jsonify(
+        {
+            "success": True,
+            "unread_count": unread,
+            "notifications": [
+                {
+                    "id": row["id"],
+                    "title": row["title"],
+                    "message": row["message"],
+                    "is_read": bool(
+                        row["is_read"]
+                    ),
+                    "created_at": row[
+                        "created_at"
+                    ],
+                }
+                for row in rows
+            ],
+        }
     )
 
 
@@ -4336,47 +5633,99 @@ def api_me():
 
     conn = get_db()
 
-    referral_count = conn.execute(
-        """
-        SELECT COUNT(*)
-        FROM referrals
-        WHERE referrer_id = ?
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchone()[0]
+    try:
 
-    referral_earnings = conn.execute(
-        """
-        SELECT COALESCE(
-            SUM(amount),
-            0
-        )
-        FROM transactions
-        WHERE user_id = ?
-        AND transaction_type = 'REFERRAL_BONUS'
-        AND status = 'Completed'
-        """,
-        (
-            user["id"],
-        ),
-    ).fetchone()[0]
+        referral_count = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM referrals
+            WHERE referrer_id = ?
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
 
-    conn.close()
+        referral_earnings = conn.execute(
+            """
+            SELECT COALESCE(
+                SUM(amount),
+                0
+            )
+            FROM transactions
+            WHERE user_id = ?
+            AND transaction_type = 'REFERRAL_BONUS'
+            AND status = 'Completed'
+            """,
+            (
+                user["id"],
+            ),
+        ).fetchone()[0]
+
+    finally:
+
+        conn.close()
+
+    plan = normalize_plan(
+        user["save_plan"]
+    )
 
     return jsonify(
         {
             "success": True,
+
             "user": {
                 "id": user["id"],
                 "phone": user["phone"],
-                "saved_balance": user["saved_balance"],
-                "withdrawable_balance": user["withdrawable_balance"],
-                "total_earned": user["total_earned"],
-                "total_withdrawn": user["total_withdrawn"],
-                "referral_code": user["referral_code"],
+
+                "save_plan": plan,
+
+                "plan_name": get_plan_name(
+                    plan
+                ),
+
+                "saved_balance": user[
+                    "saved_balance"
+                ],
+
+                "withdrawable_balance": user[
+                    "withdrawable_balance"
+                ],
+
+                "total_earned": user[
+                    "total_earned"
+                ],
+
+                "total_withdrawn": user[
+                    "total_withdrawn"
+                ],
+
+                "registration_bonus": user[
+                    "registration_bonus"
+                ],
+
+                "video_reward": get_video_reward_for_plan(
+                    plan
+                ),
+
+                "task_reward": get_task_reward_for_plan(
+                    plan
+                ),
+
+                "minimum_withdrawal": get_min_withdrawal_for_plan(
+                    plan
+                ),
+
+                "withdrawal_fee_percent": get_withdrawal_fee_percent(
+                    plan
+                ),
+
+                "referral_code": user[
+                    "referral_code"
+                ],
+
                 "referral_count": referral_count,
+
                 "referral_earnings": referral_earnings,
             },
         }

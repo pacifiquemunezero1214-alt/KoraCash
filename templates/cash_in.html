@@ -1,437 +1,934 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cash In - KoraCash</title>
+    <title>Save - KoraCash</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
 
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f8fb;
-            color: #102a43;
-            padding-bottom: 90px;
-        }
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f8fb;
+        color: #102a43;
+        padding-bottom: 90px;
+    }
 
-        .header {
-            background: linear-gradient(135deg, #006f68, #008f83);
-            color: white;
-            padding: 22px 18px 30px;
-            border-radius: 0 0 28px 28px;
-        }
+    .header {
+        background: linear-gradient(135deg, #006f68, #008f83);
+        color: white;
+        padding: 22px 18px 30px;
+        border-radius: 0 0 28px 28px;
+    }
 
-        .header-inner {
-            max-width: 700px;
-            margin: auto;
-        }
+    .header-inner {
+        max-width: 700px;
+        margin: auto;
+    }
 
-        .back {
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-        }
+    .back {
+        color: white;
+        text-decoration: none;
+        font-size: 14px;
+    }
 
-        .header h1 {
-            margin-top: 22px;
-            font-size: 27px;
-        }
+    .header h1 {
+        margin-top: 22px;
+        font-size: 27px;
+    }
 
-        .header p {
-            margin-top: 6px;
-            opacity: .88;
-            font-size: 13px;
-        }
+    .header p {
+        margin-top: 6px;
+        opacity: .88;
+        font-size: 13px;
+    }
 
-        .container {
-            max-width: 700px;
-            margin: -12px auto 0;
-            position: relative;
-            padding: 0 15px;
-        }
+    .container {
+        max-width: 700px;
+        margin: -12px auto 0;
+        position: relative;
+        padding: 0 15px;
+    }
 
-        .card {
-            background: white;
-            border-radius: 22px;
-            padding: 22px;
-            margin-bottom: 16px;
-            box-shadow: 0 8px 25px rgba(16,42,67,.08);
-        }
+    .card {
+        background: white;
+        border-radius: 22px;
+        padding: 22px;
+        margin-bottom: 16px;
+        box-shadow: 0 8px 25px rgba(16,42,67,.08);
+    }
 
-        .card h2 {
-            font-size: 19px;
-            margin-bottom: 7px;
-        }
+    .card h2 {
+        font-size: 19px;
+        margin-bottom: 7px;
+    }
 
-        .muted {
-            color: #718096;
-            font-size: 13px;
-            line-height: 1.5;
-        }
+    .muted {
+        color: #718096;
+        font-size: 13px;
+        line-height: 1.5;
+    }
 
-        .payment-box {
-            margin-top: 18px;
-            padding: 18px;
-            border-radius: 17px;
-            background: #eafff7;
-            border: 1px solid #bcefdc;
-            text-align: center;
-        }
+    .payment-box {
+        margin-top: 18px;
+        padding: 18px;
+        border-radius: 17px;
+        background: #eafff7;
+        border: 1px solid #bcefdc;
+        text-align: center;
+    }
 
-        .payment-label {
-            color: #567;
-            font-size: 12px;
-        }
+    .payment-label {
+        color: #567;
+        font-size: 12px;
+    }
 
-        .payment-number {
-            margin: 7px 0;
-            font-size: 28px;
-            font-weight: 900;
-            color: #087443;
-            letter-spacing: 1px;
-        }
+    .payment-number {
+        margin: 7px 0;
+        font-size: 28px;
+        font-weight: 900;
+        color: #087443;
+        letter-spacing: 1px;
+    }
 
-        .call-btn {
-            display: inline-block;
-            margin-top: 7px;
-            padding: 11px 18px;
-            background: #087443;
-            color: white;
-            text-decoration: none;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 800;
-        }
+    .call-btn {
+        display: inline-block;
+        margin-top: 7px;
+        padding: 11px 18px;
+        background: #087443;
+        color: white;
+        text-decoration: none;
+        border-radius: 12px;
+        font-size: 13px;
+        font-weight: 800;
+    }
 
-        .field {
-            margin-top: 18px;
-        }
+    .plans {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 12px;
+    }
 
-        .field label {
-            display: block;
-            margin-bottom: 7px;
-            font-size: 13px;
-            font-weight: 700;
-            color: #334e68;
-        }
+    .plan-option {
+        position: relative;
+    }
 
-        .field input {
-            width: 100%;
-            padding: 14px;
-            border: 1px solid #d9e2ec;
-            border-radius: 13px;
-            font-size: 16px;
-            outline: none;
-        }
+    .plan-option input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
 
-        .field input:focus {
-            border-color: #008f83;
-            box-shadow: 0 0 0 3px rgba(0,143,131,.1);
-        }
+    .plan-card {
+        display: block;
+        cursor: pointer;
+        padding: 18px 14px;
+        border: 2px solid #e2e8f0;
+        border-radius: 18px;
+        background: #ffffff;
+        transition: .2s ease;
+        height: 100%;
+    }
 
-        .save-btn {
-            width: 100%;
-            margin-top: 18px;
-            padding: 15px;
-            border: 0;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #008f83, #006f68);
-            color: white;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-        }
+    .plan-card:hover {
+        border-color: #008f83;
+        transform: translateY(-2px);
+    }
 
-        .notice {
-            margin-top: 15px;
-            padding: 13px;
-            border-radius: 12px;
-            background: #fff8e6;
-            color: #765500;
-            font-size: 12px;
-            line-height: 1.5;
-        }
+    .plan-option input:checked + .plan-card {
+        border-color: #008f83;
+        background: #eafff7;
+        box-shadow: 0 6px 18px rgba(0,143,131,.14);
+    }
 
-        .history-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 14px 0;
-            border-bottom: 1px solid #edf2f7;
-        }
+    .plan-icon {
+        font-size: 28px;
+        margin-bottom: 9px;
+    }
 
-        .history-item:last-child {
-            border-bottom: 0;
-        }
+    .plan-name {
+        font-size: 16px;
+        font-weight: 900;
+        color: #102a43;
+    }
 
-        .history-amount {
-            font-weight: 800;
-        }
+    .plan-amount {
+        margin-top: 5px;
+        font-size: 21px;
+        font-weight: 900;
+        color: #087443;
+    }
 
-        .history-date {
-            color: #8a94a6;
-            font-size: 11px;
-            margin-top: 4px;
-        }
+    .plan-info {
+        margin-top: 10px;
+        color: #718096;
+        font-size: 12px;
+        line-height: 1.55;
+    }
 
-        .status {
-            font-size: 11px;
-            font-weight: 800;
-            padding: 6px 9px;
-            border-radius: 20px;
-        }
+    .plan-reward {
+        margin-top: 9px;
+        padding: 7px 8px;
+        border-radius: 9px;
+        background: #f4f8fb;
+        color: #334e68;
+        font-size: 11px;
+        font-weight: 700;
+    }
 
-        .status.Pending {
-            background: #fff8e6;
-            color: #8a5a00;
-        }
+    .selected-text {
+        margin-top: 13px;
+        padding: 11px;
+        border-radius: 11px;
+        background: #f0fdf9;
+        color: #087443;
+        font-size: 12px;
+        font-weight: 700;
+        text-align: center;
+        display: none;
+    }
 
-        .status.Confirmed {
-            background: #e8fff3;
-            color: #087443;
-        }
+    .selected-text.show {
+        display: block;
+    }
 
-        .status.Rejected {
-            background: #fff0f0;
-            color: #b42318;
-        }
+    .proof-section {
+        margin-top: 20px;
+        padding: 17px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+    }
 
-        .bottom-nav {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 72px;
-            background: white;
-            border-top: 1px solid #e6edf3;
-            display: flex;
-            justify-content: center;
-            z-index: 100;
-        }
+    .proof-title {
+        font-size: 15px;
+        font-weight: 900;
+        color: #102a43;
+        margin-bottom: 6px;
+    }
 
-        .nav-inner {
-            width: 100%;
-            max-width: 700px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-        }
+    .proof-description {
+        color: #718096;
+        font-size: 12px;
+        line-height: 1.5;
+        margin-bottom: 13px;
+    }
 
-        .nav-item {
-            text-decoration: none;
-            color: #718096;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-            font-size: 11px;
-            font-weight: 700;
-        }
+    .upload-box {
+        border: 2px dashed #b8c7d9;
+        border-radius: 14px;
+        padding: 18px 12px;
+        text-align: center;
+        background: white;
+        cursor: pointer;
+        transition: .2s ease;
+    }
 
-        .nav-icon {
-            font-size: 21px;
-        }
+    .upload-box:hover {
+        border-color: #008f83;
+        background: #f0fdf9;
+    }
 
-        .nav-item.active {
-            color: #008f83;
-        }
+    .upload-icon {
+        font-size: 30px;
+        margin-bottom: 7px;
+    }
 
-        .flash {
-            max-width: 700px;
-            margin: 12px auto;
-            padding: 12px 15px;
-            border-radius: 12px;
-            font-size: 13px;
-        }
+    .upload-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 800;
+        color: #334e68;
+        cursor: pointer;
+    }
 
-        .flash.success {
-            background: #e8fff3;
-            color: #087443;
-        }
+    .upload-hint {
+        margin-top: 5px;
+        color: #8a94a6;
+        font-size: 11px;
+    }
 
-        .flash.danger {
-            background: #fff0f0;
-            color: #b42318;
-        }
+    #paymentProof {
+        display: none;
+    }
 
-        .flash.warning {
-            background: #fff8e6;
-            color: #8a5a00;
+    .file-name {
+        display: none;
+        margin-top: 10px;
+        padding: 9px 10px;
+        border-radius: 10px;
+        background: #e8fff3;
+        color: #087443;
+        font-size: 12px;
+        font-weight: 700;
+        word-break: break-word;
+    }
+
+    .file-name.show {
+        display: block;
+    }
+
+    .save-btn {
+        width: 100%;
+        margin-top: 18px;
+        padding: 15px;
+        border: 0;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #008f83, #006f68);
+        color: white;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        opacity: .5;
+    }
+
+    .save-btn.enabled {
+        opacity: 1;
+    }
+
+    .save-btn:disabled {
+        cursor: not-allowed;
+    }
+
+    .notice {
+        margin-top: 15px;
+        padding: 13px;
+        border-radius: 12px;
+        background: #fff8e6;
+        color: #765500;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .admin-note {
+        margin-top: 10px;
+        padding: 12px;
+        border-radius: 12px;
+        background: #eef6ff;
+        color: #28527a;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .history-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 0;
+        border-bottom: 1px solid #edf2f7;
+    }
+
+    .history-item:last-child {
+        border-bottom: 0;
+    }
+
+    .history-amount {
+        font-weight: 800;
+    }
+
+    .history-date {
+        color: #8a94a6;
+        font-size: 11px;
+        margin-top: 4px;
+    }
+
+    .status {
+        font-size: 11px;
+        font-weight: 800;
+        padding: 6px 9px;
+        border-radius: 20px;
+    }
+
+    .status.Pending {
+        background: #fff8e6;
+        color: #8a5a00;
+    }
+
+    .status.Confirmed,
+    .status.Completed {
+        background: #e8fff3;
+        color: #087443;
+    }
+
+    .status.Rejected {
+        background: #fff0f0;
+        color: #b42318;
+    }
+
+    .bottom-nav {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 72px;
+        background: white;
+        border-top: 1px solid #e6edf3;
+        display: flex;
+        justify-content: center;
+        z-index: 100;
+    }
+
+    .nav-inner {
+        width: 100%;
+        max-width: 700px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .nav-item {
+        text-decoration: none;
+        color: #718096;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .nav-icon {
+        font-size: 21px;
+    }
+
+    .nav-item.active {
+        color: #008f83;
+    }
+
+    .flash {
+        max-width: 700px;
+        margin: 12px auto;
+        padding: 12px 15px;
+        border-radius: 12px;
+        font-size: 13px;
+    }
+
+    .flash.success {
+        background: #e8fff3;
+        color: #087443;
+    }
+
+    .flash.danger {
+        background: #fff0f0;
+        color: #b42318;
+    }
+
+    .flash.warning {
+        background: #fff8e6;
+        color: #8a5a00;
+    }
+
+    @media (max-width: 500px) {
+        .plans {
+            grid-template-columns: 1fr;
         }
-    </style>
+    }
+</style>
+
 </head>
 
 <body>
 
 <header class="header">
     <div class="header-inner">
-        <a href="{{ url_for('home') }}" class="back">← Home</a>
 
-        <h1>Cash In</h1>
+```
+    <a href="{{ url_for('home') }}" class="back">
+        ← Home
+    </a>
 
-        <p>
-            Save money securely and unlock your daily activities.
-        </p>
-    </div>
+    <h1>Save</h1>
+
+    <p>
+        Choose your saving plan and submit your payment proof.
+    </p>
+
+</div>
+```
+
 </header>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-        {% for category, message in messages %}
-            <div class="flash {{ category }}">
-                {{ message }}
-            </div>
-        {% endfor %}
-    {% endif %}
+{% if messages %}
+
+```
+{% for category, message in messages %}
+
+    <div class="flash {{ category }}">
+        {{ message }}
+    </div>
+
+{% endfor %}
+```
+
+{% endif %}
 {% endwith %}
 
 <main class="container">
 
-    <div class="card">
+```
+<div class="card">
 
-        <h2>Make a Cash In</h2>
+    <h2>Choose Your Saving Plan</h2>
 
-        <p class="muted">
-            Enter the amount you want to save, then make payment
-            using the KoraCash payment number below.
-        </p>
+    <p class="muted">
+        Select the plan you want to save. Your selected plan
+        determines the daily rewards available to your account.
+    </p>
 
-        <div class="payment-box">
+    <div class="plans">
 
-            <div class="payment-label">
-                Payment Number
-            </div>
+        <!-- PLAN 3,000 -->
+        <div class="plan-option">
 
-            <div class="payment-number">
-                {{ payment_number }}
-            </div>
-
-            <a
-                href="tel:{{ payment_number }}"
-                class="call-btn"
+            <input
+                type="radio"
+                id="plan3000"
+                name="plan_selector"
+                value="3000"
             >
-                📞 Call Now
-            </a>
+
+            <label
+                for="plan3000"
+                class="plan-card"
+            >
+
+                <div class="plan-icon">
+                    💰
+                </div>
+
+                <div class="plan-name">
+                    Plan 3,000
+                </div>
+
+                <div class="plan-amount">
+                    3,000 Frw
+                </div>
+
+                <div class="plan-info">
+                    Save 3,000 Frw and access
+                    your daily activities.
+                </div>
+
+                <div class="plan-reward">
+                    🎬 Video: 300 Frw/day<br>
+                    📝 Task: 300 Frw/day<br>
+                    💵 Daily Total: 600 Frw
+                </div>
+
+            </label>
 
         </div>
 
-        <form
-            method="POST"
-            action="{{ url_for('cash_in') }}"
-        >
+        <!-- PLAN 6,000 -->
+        <div class="plan-option">
 
-            <div class="field">
-
-                <label>
-                    Amount to Save (Frw)
-                </label>
-
-                <input
-                    type="number"
-                    name="amount"
-                    min="100"
-                    step="100"
-                    placeholder="e.g. 3000"
-                    required
-                >
-
-            </div>
-
-            <button
-                type="submit"
-                class="save-btn"
+            <input
+                type="radio"
+                id="plan6000"
+                name="plan_selector"
+                value="6000"
             >
-                Save Money
-            </button>
 
-        </form>
+            <label
+                for="plan6000"
+                class="plan-card"
+            >
 
-        <div class="notice">
-            Your payment request will remain
-            <strong>Pending</strong> until it is confirmed.
-            Calling the payment number does not automatically
-            confirm your payment.
+                <div class="plan-icon">
+                    💎
+                </div>
+
+                <div class="plan-name">
+                    Plan 6,000
+                </div>
+
+                <div class="plan-amount">
+                    6,000 Frw
+                </div>
+
+                <div class="plan-info">
+                    Save 6,000 Frw and access
+                    your daily activities.
+                </div>
+
+                <div class="plan-reward">
+                    🎬 Video: 600 Frw/day<br>
+                    📝 Task: 600 Frw/day<br>
+                    💵 Daily Total: 1,200 Frw
+                </div>
+
+            </label>
+
         </div>
 
     </div>
 
+    <div
+        id="selectedText"
+        class="selected-text"
+    >
+        Selected plan: None
+    </div>
 
-    <div class="card">
+    <div class="payment-box">
 
-        <h2>Cash In History</h2>
+        <div class="payment-label">
+            Send your payment to
+        </div>
 
-        {% if cash_ins %}
+        <div class="payment-number">
+            {{ payment_number }}
+        </div>
 
-            {% for item in cash_ins %}
+        <a
+            href="tel:{{ payment_number }}"
+            class="call-btn"
+        >
+            📞 Call Now
+        </a>
 
-                <div class="history-item">
+    </div>
 
-                    <div>
+    <form
+        method="POST"
+        action="{{ url_for('cash_in') }}"
+        id="saveForm"
+        enctype="multipart/form-data"
+    >
 
-                        <div class="history-amount">
-                            {{ "{:,}".format(item["amount"]) }} Frw
-                        </div>
+        <input
+            type="hidden"
+            name="amount"
+            id="amount"
+            value=""
+        >
 
-                        <div class="history-date">
-                            {{ item["created_at"][:16].replace("T", " ") }}
-                        </div>
+        <div class="proof-section">
 
+            <div class="proof-title">
+                📸 Upload MoMo Payment Message
+            </div>
+
+            <div class="proof-description">
+                After sending the money, take a screenshot of
+                your MoMo confirmation message and upload it
+                here. The admin will review it before approving
+                your Save request.
+            </div>
+
+            <label
+                for="paymentProof"
+                class="upload-box"
+            >
+
+                <div class="upload-icon">
+                    📤
+                </div>
+
+                <span class="upload-label">
+                    Tap to upload MoMo screenshot
+                </span>
+
+                <div class="upload-hint">
+                    JPG, JPEG, PNG or WEBP
+                </div>
+
+            </label>
+
+            <input
+                type="file"
+                name="payment_proof"
+                id="paymentProof"
+                accept="image/jpeg,image/png,image/webp"
+                required
+            >
+
+            <div
+                id="fileName"
+                class="file-name"
+            ></div>
+
+        </div>
+
+        <button
+            type="submit"
+            class="save-btn"
+            id="saveButton"
+            disabled
+        >
+            Choose a Plan First
+        </button>
+
+    </form>
+
+    <div class="notice">
+
+        Your payment request will remain
+        <strong>Pending</strong> until an admin reviews
+        your payment proof and confirms the payment.
+
+    </div>
+
+    <div class="admin-note">
+
+        🔐 <strong>Manual Verification:</strong>
+        KoraCash does not automatically approve payments.
+        Your uploaded MoMo screenshot will be reviewed by
+        an admin before your saved balance is updated.
+
+    </div>
+
+</div>
+
+<div class="card">
+
+    <h2>Cash In History</h2>
+
+    {% if cash_ins %}
+
+        {% for item in cash_ins %}
+
+            <div class="history-item">
+
+                <div>
+
+                    <div class="history-amount">
+                        {{ "{:,}".format(item["amount"]) }} Frw
                     </div>
 
-                    <span class="status {{ item['status'] }}">
-                        {{ item["status"] }}
-                    </span>
+                    <div class="history-date">
+                        {{ item["created_at"][:16].replace("T", " ") }}
+                    </div>
 
                 </div>
 
-            {% endfor %}
+                <span class="status {{ item['status'] }}">
+                    {{ item["status"] }}
+                </span>
 
-        {% else %}
+            </div>
 
-            <p class="muted">
-                No Cash In transactions yet.
-            </p>
+        {% endfor %}
 
-        {% endif %}
+    {% else %}
 
-    </div>
+        <p class="muted">
+            No Cash In transactions yet.
+        </p>
+
+    {% endif %}
+
+</div>
+```
 
 </main>
 
-
 <nav class="bottom-nav">
 
-    <div class="nav-inner">
+```
+<div class="nav-inner">
 
-        <a href="{{ url_for('home') }}" class="nav-item">
-            <span class="nav-icon">⌂</span>
-            <span>Home</span>
-        </a>
+    <a
+        href="{{ url_for('home') }}"
+        class="nav-item"
+    >
+        <span class="nav-icon">⌂</span>
+        <span>Home</span>
+    </a>
 
-        <a href="{{ url_for('cash_in') }}" class="nav-item active">
-            <span class="nav-icon">＋</span>
-            <span>Cash In</span>
-        </a>
+    <a
+        href="{{ url_for('cash_in') }}"
+        class="nav-item active"
+    >
+        <span class="nav-icon">＋</span>
+        <span>Save</span>
+    </a>
 
-        <a href="{{ url_for('cash_out') }}" class="nav-item">
-            <span class="nav-icon">↗</span>
-            <span>Cash Out</span>
-        </a>
+    <a
+        href="{{ url_for('cash_out') }}"
+        class="nav-item"
+    >
+        <span class="nav-icon">↗</span>
+        <span>Cash Out</span>
+    </a>
 
-        <a href="{{ url_for('profile') }}" class="nav-item">
-            <span class="nav-icon">◯</span>
-            <span>Profile</span>
-        </a>
+    <a
+        href="{{ url_for('profile') }}"
+        class="nav-item"
+    >
+        <span class="nav-icon">◯</span>
+        <span>Profile</span>
+    </a>
 
-    </div>
+</div>
+```
 
 </nav>
+
+<script>
+
+    const planInputs = document.querySelectorAll(
+        'input[name="plan_selector"]'
+    );
+
+    const amountInput = document.getElementById("amount");
+
+    const saveButton = document.getElementById("saveButton");
+
+    const selectedText = document.getElementById("selectedText");
+
+    const paymentProof = document.getElementById("paymentProof");
+
+    const fileName = document.getElementById("fileName");
+
+
+    function updateButtonState() {
+
+        const validPlan =
+            amountInput.value === "3000" ||
+            amountInput.value === "6000";
+
+        const hasFile =
+            paymentProof.files &&
+            paymentProof.files.length > 0;
+
+        saveButton.disabled =
+            !(validPlan && hasFile);
+
+        if (validPlan && hasFile) {
+
+            saveButton.classList.add("enabled");
+
+            saveButton.textContent =
+                "Submit Save Request";
+
+        } else {
+
+            saveButton.classList.remove("enabled");
+
+            if (!validPlan) {
+
+                saveButton.textContent =
+                    "Choose a Plan First";
+
+            } else {
+
+                saveButton.textContent =
+                    "Upload MoMo Screenshot";
+
+            }
+
+        }
+
+    }
+
+
+    planInputs.forEach(function(input) {
+
+        input.addEventListener("change", function() {
+
+            const selectedPlan = this.value;
+
+            amountInput.value = selectedPlan;
+
+
+            if (selectedPlan === "3000") {
+
+                selectedText.textContent =
+                    "Selected plan: Plan 3,000 Frw";
+
+            }
+
+
+            if (selectedPlan === "6000") {
+
+                selectedText.textContent =
+                    "Selected plan: Plan 6,000 Frw";
+
+            }
+
+
+            selectedText.classList.add("show");
+
+            updateButtonState();
+
+        });
+
+    });
+
+
+    paymentProof.addEventListener("change", function() {
+
+        if (this.files && this.files.length > 0) {
+
+            const file = this.files[0];
+
+            fileName.textContent =
+                "Selected file: " + file.name;
+
+            fileName.classList.add("show");
+
+        } else {
+
+            fileName.textContent = "";
+
+            fileName.classList.remove("show");
+
+        }
+
+        updateButtonState();
+
+    });
+
+
+    document.getElementById("saveForm").addEventListener(
+        "submit",
+        function(event) {
+
+            if (
+                amountInput.value !== "3000" &&
+                amountInput.value !== "6000"
+            ) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please choose a saving plan first."
+                );
+
+                return;
+
+            }
+
+
+            if (
+                !paymentProof.files ||
+                paymentProof.files.length === 0
+            ) {
+
+                event.preventDefault();
+
+                alert(
+                    "Please upload your MoMo payment screenshot."
+                );
+
+                return;
+
+            }
+
+        }
+    );
+
+</script>
 
 </body>
 </html>
