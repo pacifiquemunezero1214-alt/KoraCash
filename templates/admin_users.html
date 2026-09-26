@@ -70,14 +70,17 @@ button{border:0;border-radius:8px;padding:8px 11px;font-weight:700;cursor:pointe
 </td>
 
 <td>
-<form method="POST"
-action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
 {% if user.is_active %}
+<form method="POST"
+action="{{ url_for('admin.deactivate_user', user_id=user.id) }}">
 <button class="deactivate">Deactivate</button>
-{% else %}
-<button class="activate">Activate</button>
-{% endif %}
 </form>
+{% else %}
+<form method="POST"
+action="{{ url_for('admin.activate_user', user_id=user.id) }}">
+<button class="activate">Activate</button>
+</form>
+{% endif %}
 </td>
 </tr>
 {% else %}

@@ -1423,50 +1423,15 @@ def choose_daily_video(
     user_id,
     date_value,
 ):
+    """
+    Choose a video for a new daily activity.
 
-    # --------------------------------------------------------
-    # Cross-database implementation.
-    # Avoids SQLite/PostgreSQL date syntax differences.
-    # --------------------------------------------------------
-
-    try:
-
-        current_date = datetime.strptime(
-            date_value,
-            "%Y-%m-%d",
-        ).date()
-
-    except ValueError:
-
-        current_date = datetime.now().date()
-
-    cutoff_date = (
-        current_date
-        - timedelta(
-            days=TASK_ROTATION_DAYS
-        )
-    ).isoformat()
-
-    recent = conn.execute(
-        """
-        SELECT video_id
-        FROM daily_activities
-        WHERE user_id = ?
-        AND video_id IS NOT NULL
-        AND activity_date >= ?
-        """,
-        (
-            user_id,
-            cutoff_date,
-        ),
-    ).fetchall()
-
-    excluded_ids = {
-        row["video_id"]
-        for row in recent
-        if row["video_id"] is not None
-    }
-
+    The same user's previous daily video is avoided when
+    another active video is available.
+    The actual assignment is stored in daily_activities,
+    so refreshing/logging in again during the same day
+    does not change the assignment.
+    """
     videos = conn.execute(
         """
         SELECT *
@@ -1478,15 +1443,47 @@ def choose_daily_video(
         """
     ).fetchall()
 
-    for video in videos:
+    if not videos:
+        return None
 
-        if video["id"] not in excluded_ids:
+    try:
+        current_date = datetime.strptime(
+            date_value,
+            "%Y-%m-%d",
+        ).date()
+    except ValueError:
+        current_date = datetime.now().date()
+
+    previous_date = (
+        current_date - timedelta(days=1)
+    ).isoformat()
+
+    previous = conn.execute(
+        """
+        SELECT video_id
+        FROM daily_activities
+        WHERE user_id = ?
+        AND activity_date = ?
+        AND video_id IS NOT NULL
+        LIMIT 1
+        """,
+        (
+            user_id,
+            previous_date,
+        ),
+    ).fetchone()
+
+    previous_video_id = (
+        previous["video_id"]
+        if previous
+        else None
+    )
+
+    for video in videos:
+        if video["id"] != previous_video_id:
             return video
 
-    if videos:
-        return videos[0]
-
-    return None
+    return videos[0]
 
 
 def choose_daily_task(
@@ -1494,45 +1491,15 @@ def choose_daily_task(
     user_id,
     date_value,
 ):
+    """
+    Choose a task for a new daily activity.
 
-    try:
-
-        current_date = datetime.strptime(
-            date_value,
-            "%Y-%m-%d",
-        ).date()
-
-    except ValueError:
-
-        current_date = datetime.now().date()
-
-    cutoff_date = (
-        current_date
-        - timedelta(
-            days=TASK_ROTATION_DAYS
-        )
-    ).isoformat()
-
-    recent = conn.execute(
-        """
-        SELECT task_id
-        FROM daily_activities
-        WHERE user_id = ?
-        AND task_id IS NOT NULL
-        AND activity_date >= ?
-        """,
-        (
-            user_id,
-            cutoff_date,
-        ),
-    ).fetchall()
-
-    excluded_ids = {
-        row["task_id"]
-        for row in recent
-        if row["task_id"] is not None
-    }
-
+    The same user's previous daily task is avoided when
+    another active task is available.
+    The actual assignment is stored in daily_activities,
+    so refreshing/logging in again during the same day
+    does not change the assignment.
+    """
     tasks = conn.execute(
         """
         SELECT *
@@ -1553,20 +1520,48 @@ def choose_daily_task(
         """
     ).fetchall()
 
-    for task in tasks:
+    if not tasks:
+        return None
 
-        if task["id"] not in excluded_ids:
+    try:
+        current_date = datetime.strptime(
+            date_value,
+            "%Y-%m-%d",
+        ).date()
+    except ValueError:
+        current_date = datetime.now().date()
+
+    previous_date = (
+        current_date - timedelta(days=1)
+    ).isoformat()
+
+    previous = conn.execute(
+        """
+        SELECT task_id
+        FROM daily_activities
+        WHERE user_id = ?
+        AND activity_date = ?
+        AND task_id IS NOT NULL
+        LIMIT 1
+        """,
+        (
+            user_id,
+            previous_date,
+        ),
+    ).fetchone()
+
+    previous_task_id = (
+        previous["task_id"]
+        if previous
+        else None
+    )
+
+    for task in tasks:
+        if task["id"] != previous_task_id:
             return task
 
-    if tasks:
-        return tasks[0]
+    return tasks[0]
 
-    return None
-
-
-# ============================================================
-# DAILY ACTIVITY ENGINE
-# ============================================================
 
 def get_or_create_daily_activity(
     user_id
