@@ -3422,7 +3422,7 @@ def cash_out():
         if (
             not normalized_phone.isdigit()
             or len(normalized_phone) != 10
-            or not normalized_phone.startswith("07")
+                        or (network == "Airtel" and not normalized_phone.startswith(("072", "073"))) or (network == "MTN" and not normalized_phone.startswith(("078", "079")))
         ):
 
             flash(

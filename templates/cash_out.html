@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -113,6 +114,32 @@
             box-shadow: 0 0 0 3px rgba(23,107,135,.1);
         }
 
+        .field input.input-error {
+            border-color: #b42318;
+            box-shadow: 0 0 0 3px rgba(180,35,24,.08);
+        }
+
+        .field input.input-valid {
+            border-color: #087443;
+            box-shadow: 0 0 0 3px rgba(8,116,67,.08);
+        }
+
+        .phone-error {
+            display: none;
+            margin-top: 8px;
+            padding: 10px 12px;
+            background: #fff0f0;
+            border: 1px solid #f5c2c2;
+            border-radius: 10px;
+            color: #b42318;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .phone-error.show {
+            display: block;
+        }
+
         .networks {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -157,6 +184,11 @@
             font-size: 16px;
             font-weight: 800;
             cursor: pointer;
+        }
+
+        .withdraw-btn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
         }
 
         .lock {
@@ -372,6 +404,7 @@
         <form
             method="POST"
             action="{{ url_for('cash_out') }}"
+            id="cashOutForm"
         >
 
             <div class="field">
@@ -454,10 +487,22 @@
                 <input
                     type="tel"
                     name="phone"
+                    id="phone"
+                    inputmode="numeric"
+                    autocomplete="tel"
+                    maxlength="10"
+                    pattern="[0-9]{10}"
                     placeholder="07XXXXXXXX"
                     required
                     {% if lock_until %}disabled{% endif %}
                 >
+
+                <div
+                    id="phoneError"
+                    class="phone-error"
+                    role="alert"
+                    aria-live="polite"
+                ></div>
 
             </div>
 
@@ -561,5 +606,235 @@
 
 </nav>
 
+
+<script>
+
+    const cashOutForm = document.getElementById("cashOutForm");
+    const phoneInput = document.getElementById("phone");
+    const phoneError = document.getElementById("phoneError");
+
+    const networkInputs = document.querySelectorAll(
+        'input[name="network"]'
+    );
+
+
+    function getSelectedNetwork() {
+
+        const selected = document.querySelector(
+            'input[name="network"]:checked'
+        );
+
+        return selected ? selected.value : "";
+
+    }
+
+
+    function showPhoneError(message) {
+
+        phoneError.textContent = message;
+        phoneError.classList.add("show");
+
+        phoneInput.classList.remove("input-valid");
+        phoneInput.classList.add("input-error");
+
+    }
+
+
+    function clearPhoneError() {
+
+        phoneError.textContent = "";
+        phoneError.classList.remove("show");
+
+        phoneInput.classList.remove("input-error");
+
+    }
+
+
+    function validatePhone(showError = true) {
+
+        const phone = phoneInput.value.trim();
+        const network = getSelectedNetwork();
+
+
+        if (!phone) {
+
+            if (showError) {
+
+                showPhoneError(
+                    "Enter the 10-digit phone number that will receive your money."
+                );
+
+            }
+
+            return false;
+
+        }
+
+
+        if (!/^[0-9]+$/.test(phone)) {
+
+            if (showError) {
+
+                showPhoneError(
+                    "Phone number must contain digits only."
+                );
+
+            }
+
+            return false;
+
+        }
+
+
+        if (phone.length !== 10) {
+
+            if (showError) {
+
+                showPhoneError(
+                    "Phone number must contain exactly 10 digits."
+                );
+
+            }
+
+            return false;
+
+        }
+
+
+        if (!network) {
+
+            if (showError) {
+
+                showPhoneError(
+                    "Please select MTN Rwanda or Airtel Rwanda first."
+                );
+
+            }
+
+            return false;
+
+        }
+
+
+        if (
+            network === "Airtel" &&
+            !/^07[23][0-9]{7}$/.test(phone)
+        ) {
+
+            if (showError) {
+
+                showPhoneError(
+                    "Airtel Rwanda numbers must start with 072 or 073."
+                );
+
+            }
+
+            return false;
+
+        }
+
+
+        if (
+            network === "MTN" &&
+            !/^07[89][0-9]{7}$/.test(phone)
+        ) {
+
+            if (showError) {
+
+                showPhoneError(
+                    "MTN Rwanda numbers must start with 078 or 079."
+                );
+
+            }
+
+            return false;
+
+        }
+
+
+        clearPhoneError();
+
+        phoneInput.classList.add("input-valid");
+
+        return true;
+
+    }
+
+
+    phoneInput.addEventListener(
+        "input",
+        function () {
+
+            phoneInput.classList.remove("input-valid");
+
+            if (phoneInput.value.length > 0) {
+
+                validatePhone(true);
+
+            } else {
+
+                clearPhoneError();
+
+            }
+
+        }
+    );
+
+
+    networkInputs.forEach(
+        function (networkInput) {
+
+            networkInput.addEventListener(
+                "change",
+                function () {
+
+                    phoneInput.classList.remove(
+                        "input-valid"
+                    );
+
+                    if (
+                        phoneInput.value.trim() !== ""
+                    ) {
+
+                        validatePhone(true);
+
+                    } else {
+
+                        clearPhoneError();
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    cashOutForm.addEventListener(
+        "submit",
+        function (event) {
+
+            if (!validatePhone(true)) {
+
+                event.preventDefault();
+
+                phoneInput.focus();
+
+                phoneInput.scrollIntoView({
+                    behavior: "smooth",
+                    block: "center"
+                });
+
+                return false;
+
+            }
+
+        }
+    );
+
+</script>
+
 </body>
 </html>
+```
