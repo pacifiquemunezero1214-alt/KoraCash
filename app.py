@@ -4043,7 +4043,15 @@ def confirm_video():
 
             watch_seconds = 0
 
-        if watch_seconds < MIN_VIDEO_WATCH_SECONDS:
+                # ----------------------------------------------------
+        # VIDEO DURATION VALIDATION
+        # ----------------------------------------------------
+        # Frontend izohereza igihe nyacyo video ya YouTube
+        # imara iyo igeze kuri 100%.
+        # Nta 30 seconds fixed requirement ikiriho.
+        # ----------------------------------------------------
+
+        if watch_seconds <= 0:
 
             conn.rollback()
 
@@ -4051,8 +4059,7 @@ def confirm_video():
                 {
                     "success": False,
                     "message": (
-                        "Please watch the video for at least "
-                        f"{MIN_VIDEO_WATCH_SECONDS} seconds."
+                        "Nyamuneka reba video kugeza igeze kuri 100%."
                     ),
                 }
             ), 400

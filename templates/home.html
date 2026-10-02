@@ -1,1167 +1,2533 @@
 ﻿<!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>KoraCash</title>
 
-<title>KoraCash</title>
-
-<style>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
-
-    body {
-        font-family: Arial, Helvetica, sans-serif;
-        background: #f4f7fb;
-        color: #172033;
-        padding-bottom: 90px;
-    }
-
-    .topbar {
-        background: #ffffff;
-        padding: 16px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid #e6eaf0;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-    }
-
-    .brand {
-        font-size: 24px;
-        font-weight: 800;
-        color: #1463ff;
-    }
-
-    .welcome {
-        font-size: 13px;
-        color: #6b7280;
-        margin-top: 3px;
-    }
-
-    .notification {
-        position: relative;
-        text-decoration: none;
-        font-size: 23px;
-        color: #172033;
-    }
-
-    .notification-count {
-        position: absolute;
-        top: -7px;
-        right: -8px;
-        min-width: 18px;
-        height: 18px;
-        background: #ef4444;
-        color: white;
-        border-radius: 50%;
-        font-size: 10px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-weight: bold;
-    }
-
-    .container {
-        width: min(1100px, 94%);
-        margin: 22px auto;
-    }
-
-    .balance-card {
-        background: linear-gradient(135deg, #1463ff, #1747b8);
-        color: white;
-        border-radius: 22px;
-        padding: 24px;
-        box-shadow: 0 12px 30px rgba(20, 99, 255, .18);
-        margin-bottom: 18px;
-    }
-
-    .balance-label {
-        font-size: 14px;
-        opacity: .85;
-    }
-
-    .balance-value {
-        font-size: 34px;
-        font-weight: 800;
-        margin: 8px 0;
-    }
-
-    .balance-note {
-        font-size: 13px;
-        opacity: .85;
-    }
-
-    .cards {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 14px;
-        margin-bottom: 25px;
-    }
-
-    .card {
-        background: white;
-        border-radius: 16px;
-        padding: 18px;
-        border: 1px solid #e7ebf2;
-    }
-
-    .card-title {
-        font-size: 12px;
-        color: #6b7280;
-        margin-bottom: 8px;
-    }
-
-    .card-value {
-        font-size: 21px;
-        font-weight: 800;
-    }
-
-    .section-title {
-        font-size: 20px;
-        font-weight: 800;
-        margin: 25px 0 13px;
-    }
-
-    .activity-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 18px;
-    }
-
-    .activity-card {
-        background: white;
-        border-radius: 20px;
-        padding: 20px;
-        border: 1px solid #e5eaf1;
-        box-shadow: 0 7px 20px rgba(0,0,0,.04);
-    }
-
-    .activity-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-
-    .activity-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 13px;
-        background: #edf4ff;
-        color: #1463ff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 21px;
-    }
-
-    .activity-name {
-        flex: 1;
-        font-size: 17px;
-        font-weight: 800;
-    }
-
-    .reward {
-        background: #eafaf0;
-        color: #16803c;
-        padding: 7px 10px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .description {
-        color: #667085;
-        font-size: 14px;
-        line-height: 1.55;
-        margin-bottom: 15px;
-    }
-
-    .video-box {
-        background: #f7f9fc;
-        border: 1px solid #e8edf4;
-        border-radius: 14px;
-        padding: 14px;
-        margin-bottom: 14px;
-    }
-
-    .video-link {
-        display: block;
-        text-decoration: none;
-        background: #172033;
-        color: white;
-        border-radius: 12px;
-        padding: 15px;
-        text-align: center;
-        font-weight: 700;
-        margin-bottom: 12px;
-    }
-
-    .timer {
-        text-align: center;
-        color: #667085;
-        font-size: 13px;
-    }
-
-    .progress {
-        height: 8px;
-        background: #e7ebf1;
-        border-radius: 20px;
-        overflow: hidden;
-        margin-top: 10px;
-    }
-
-    .progress-bar {
-        width: 0%;
-        height: 100%;
-        background: #1463ff;
-        transition: width .5s;
-    }
-
-    .question {
-        font-size: 15px;
-        font-weight: 700;
-        line-height: 1.5;
-        margin-bottom: 15px;
-    }
-
-    .choices {
-        display: grid;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-
-    .choice {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 13px;
-        border: 1px solid #dfe5ed;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: .2s;
-        background: white;
-    }
-
-    .choice:hover {
-        border-color: #1463ff;
-        background: #f5f8ff;
-    }
-
-    .choice input {
-        accent-color: #1463ff;
-    }
-
-    .choice-letter {
-        width: 29px;
-        height: 29px;
-        border-radius: 8px;
-        background: #edf2f8;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-weight: 800;
-        font-size: 12px;
-    }
-
-    .btn {
-        width: 100%;
-        border: none;
-        border-radius: 12px;
-        padding: 13px 16px;
-        font-size: 14px;
-        font-weight: 800;
-        cursor: pointer;
-    }
-
-    .btn-primary {
-        background: #1463ff;
-        color: white;
-    }
-
-    .btn-primary:disabled {
-        background: #aeb8c8;
-        cursor: not-allowed;
-    }
-
-    .status {
-        padding: 12px;
-        border-radius: 12px;
-        font-size: 13px;
-        margin-top: 12px;
-        display: none;
-    }
-
-    .status.success {
-        display: block;
-        background: #eafaf0;
-        color: #137333;
-    }
-
-    .status.error {
-        display: block;
-        background: #fff0f0;
-        color: #b42318;
-    }
-
-    .completed {
-        border: 1px solid #b9e7ca;
-        background: #f3fff7;
-    }
-
-    .completed-badge {
-        background: #16803c;
-        color: white;
-        padding: 7px 10px;
-        border-radius: 20px;
-        font-size: 11px;
-        font-weight: 700;
-    }
-
-    .quick-links {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-        margin-top: 15px;
-    }
-
-    .quick-link {
-        background: white;
-        border: 1px solid #e4e9f0;
-        border-radius: 15px;
-        padding: 16px 10px;
-        text-decoration: none;
-        color: #172033;
-        text-align: center;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .quick-icon {
-        display: block;
-        font-size: 21px;
-        margin-bottom: 7px;
-    }
-
-    .bottom-nav {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 72px;
-        background: white;
-        border-top: 1px solid #e4e8ef;
-        display: flex;
-        justify-content: center;
-        z-index: 200;
-    }
-
-    .nav-inner {
-        width: min(700px, 100%);
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 5px;
-        padding: 8px;
-    }
-
-    .nav-item {
-        text-decoration: none;
-        color: #667085;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        border-radius: 12px;
-        font-size: 11px;
-        font-weight: 700;
-    }
-
-    .nav-item span {
-        font-size: 19px;
-        margin-bottom: 3px;
-    }
-
-    .nav-item.active {
-        color: #1463ff;
-        background: #eef4ff;
-    }
-
-    .flash {
-        padding: 13px 15px;
-        border-radius: 12px;
-        background: #fff8e6;
-        color: #8a5a00;
-        margin-bottom: 15px;
-        font-size: 13px;
-    }
-
-    .empty {
-        background: white;
-        padding: 25px;
-        border-radius: 18px;
-        text-align: center;
-        color: #667085;
-    }
-
-    @media (max-width: 850px) {
-        .cards {
-            grid-template-columns: repeat(2, 1fr);
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
-        .activity-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .quick-links {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media (max-width: 520px) {
-        .container {
-            width: 94%;
-            margin-top: 15px;
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f4f7fb;
+            color: #172033;
+            padding-bottom: 90px;
         }
 
         .topbar {
-            padding: 13px 15px;
+            background: #ffffff;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e6eaf0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .brand {
-            font-size: 21px;
+            font-size: 24px;
+            font-weight: 800;
+            color: #1463ff;
+        }
+
+        .welcome {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 3px;
+        }
+
+        .notification {
+            position: relative;
+            text-decoration: none;
+            font-size: 23px;
+            color: #172033;
+        }
+
+        .notification-count {
+            position: absolute;
+            top: -7px;
+            right: -8px;
+            min-width: 18px;
+            height: 18px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .container {
+            width: min(1100px, 94%);
+            margin: 22px auto;
         }
 
         .balance-card {
-            padding: 20px;
-            border-radius: 18px;
+            background: linear-gradient(135deg, #1463ff, #1747b8);
+            color: white;
+            border-radius: 22px;
+            padding: 24px;
+            box-shadow: 0 12px 30px rgba(20, 99, 255, .18);
+            margin-bottom: 18px;
+        }
+
+        .balance-label {
+            font-size: 14px;
+            opacity: .85;
         }
 
         .balance-value {
-            font-size: 28px;
+            font-size: 34px;
+            font-weight: 800;
+            margin: 8px 0;
+        }
+
+        .balance-note {
+            font-size: 13px;
+            opacity: .85;
         }
 
         .cards {
-            gap: 9px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            margin-bottom: 25px;
         }
 
         .card {
-            padding: 14px;
+            background: white;
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid #e7ebf2;
+        }
+
+        .card-title {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
         }
 
         .card-value {
-            font-size: 18px;
-        }
-
-        .activity-card {
-            padding: 16px;
-        }
-
-        .activity-header {
-            align-items: flex-start;
-        }
-
-        .reward {
-            font-size: 10px;
+            font-size: 21px;
+            font-weight: 800;
         }
 
         .section-title {
-            font-size: 18px;
+            font-size: 20px;
+            font-weight: 800;
+            margin: 25px 0 13px;
         }
-    }
-</style>
 
+        .activity-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 18px;
+        }
 
+        .activity-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid #e5eaf1;
+            box-shadow: 0 7px 20px rgba(0,0,0,.04);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .activity-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 13px;
+            background: #edf4ff;
+            color: #1463ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+        }
+
+        .activity-name {
+            flex: 1;
+            font-size: 17px;
+            font-weight: 800;
+        }
+
+        .reward {
+            background: #eafaf0;
+            color: #16803c;
+            padding: 7px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .description {
+            color: #667085;
+            font-size: 14px;
+            line-height: 1.55;
+            margin-bottom: 15px;
+        }
+
+        .video-box {
+            background: #f7f9fc;
+            border: 1px solid #e8edf4;
+            border-radius: 14px;
+            padding: 14px;
+            margin-bottom: 14px;
+        }
+
+        /* ==============================
+           YOUTUBE EMBED
+        ============================== */
+
+        .youtube-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #111827;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .youtube-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+        }
+
+        .video-placeholder {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            border-radius: 12px;
+            background: #172033;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            margin-bottom: 12px;
+        }
+
+        .video-placeholder-content {
+            max-width: 420px;
+        }
+
+        .video-placeholder-icon {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
+
+        .video-placeholder-title {
+            font-size: 17px;
+            font-weight: 800;
+            margin-bottom: 7px;
+        }
+
+        .video-placeholder-text {
+            font-size: 13px;
+            opacity: .8;
+            line-height: 1.5;
+        }
+
+        /* ==============================
+           VIDEO PROGRESS
+        ============================== */
+
+        .video-percentage {
+            text-align: center;
+            color: #ef4444;
+            font-size: 18px;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .timer {
+            text-align: center;
+            color: #667085;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        .progress {
+            height: 8px;
+            background: #e7ebf1;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #ef4444;
+            transition: width .25s linear;
+        }
+
+        .question {
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .choices {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .choice {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 13px;
+            border: 1px solid #dfe5ed;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: .2s;
+            background: white;
+        }
+
+        .choice:hover {
+            border-color: #1463ff;
+            background: #f5f8ff;
+        }
+
+        .choice input {
+            accent-color: #1463ff;
+        }
+
+        .choice-letter {
+            width: 29px;
+            height: 29px;
+            border-radius: 8px;
+            background: #edf2f8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            font-size: 12px;
+        }
+
+        .btn {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 13px 16px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: #1463ff;
+            color: white;
+        }
+
+        .btn-primary:disabled {
+            background: #aeb8c8;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .status.success {
+            display: block;
+            background: #eafaf0;
+            color: #137333;
+        }
+
+        .status.error {
+            display: block;
+            background: #fff0f0;
+            color: #b42318;
+        }
+
+        .completed {
+            border: 1px solid #b9e7ca;
+            background: #f3fff7;
+        }
+
+        .completed-badge {
+            background: #16803c;
+            color: white;
+            padding: 7px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .quick-link {
+            background: white;
+            border: 1px solid #e4e9f0;
+            border-radius: 15px;
+            padding: 16px 10px;
+            text-decoration: none;
+            color: #172033;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .quick-icon {
+            display: block;
+            font-size: 21px;
+            margin-bottom: 7px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 72px;
+            background: white;
+            border-top: 1px solid #e4e8ef;
+            display: flex;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .nav-inner {
+            width: min(700px, 100%);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            padding: 8px;
+        }
+
+        .nav-item {
+            text-decoration: none;
+            color: #667085;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .nav-item span {
+            font-size: 19px;
+            margin-bottom: 3px;
+        }
+
+        .nav-item.active {
+            color: #1463ff;
+            background: #eef4ff;
+        }
+
+        .flash {
+            padding: 13px 15px;
+            border-radius: 12px;
+            background: #fff8e6;
+            color: #8a5a00;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .empty {
+            background: white;
+            padding: 25px;
+            border-radius: 18px;
+            text-align: center;
+            color: #667085;
+        }
+
+        @media (max-width: 850px) {
+            .cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .activity-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-links {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 520px) {
+            .container {
+                width: 94%;
+                margin-top: 15px;
+            }
+
+            .topbar {
+                padding: 13px 15px;
+            }
+
+            .brand {
+                font-size: 21px;
+            }
+
+            .balance-card {
+                padding: 20px;
+                border-radius: 18px;
+            }
+
+            .balance-value {
+                font-size: 28px;
+            }
+
+            .cards {
+                gap: 9px;
+            }
+
+            .card {
+                padding: 14px;
+            }
+
+            .card-value {
+                font-size: 18px;
+            }
+
+            .activity-card {
+                padding: 16px;
+            }
+
+            .activity-header {
+                align-items: flex-start;
+            }
+
+            .reward {
+                font-size: 10px;
+            }
+
+            .section-title {
+                font-size: 18px;
+            }
+
+            .video-percentage {
+                font-size: 16px;
+            }
+        }
+    </style>
 </head>
 
 <body>
 
 <header class="topbar">
+
     <div>
         <div class="brand">KoraCash</div>
         <div class="welcome">Welcome, {{ user.phone }}</div>
     </div>
 
+    <a href="{{ url_for('notifications') }}" class="notification">
+        🔔
 
-<a href="{{ url_for('notifications') }}" class="notification">
-    🔔
-    {% if unread_notifications is defined and unread_notifications %}
-        <span class="notification-count">
-            {{ unread_notifications }}
-        </span>
-    {% endif %}
-</a>
-
+        {% if unread_notifications is defined and unread_notifications %}
+            <span class="notification-count">
+                {{ unread_notifications }}
+            </span>
+        {% endif %}
+    </a>
 
 </header>
 
+
 <main class="container">
 
-```
-{% with messages = get_flashed_messages() %}
-    {% if messages %}
-        {% for message in messages %}
-            <div class="flash">
-                {{ message }}
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <div class="flash">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+
+    <!-- ==============================
+         BALANCE
+    ============================== -->
+
+    <section class="balance-card">
+
+        <div class="balance-label">
+            Total Balance
+        </div>
+
+        <div class="balance-value">
+            {{ "{:,.0f}".format((user.saved_balance or 0) + (user.withdrawable_balance or 0)) }} Frw
+        </div>
+
+        <div class="balance-note">
+            Your total balance including saved money and earnings
+        </div>
+
+        <div style="margin-top: 16px; display: grid; gap: 8px;">
+
+            <div style="display: flex; justify-content: space-between; gap: 12px;">
+                <span>Available Cash Out</span>
+
+                <strong>
+                    {{ "{:,.0f}".format(user.withdrawable_balance or 0) }} Frw
+                </strong>
             </div>
-        {% endfor %}
-    {% endif %}
-{% endwith %}
 
+            <div style="display: flex; justify-content: space-between; gap: 12px;">
 
-<!-- BALANCE -->
+                <span>Saved / Locked</span>
 
-<section class="balance-card">
-    <div class="balance-label">Total Balance</div>
+                <strong>
+                    {{ "{:,.0f}".format(user.saved_balance or 0) }} Frw
+                </strong>
 
-    <div class="balance-value">
-        {{ "{:,.0f}".format((user.saved_balance or 0) + (user.withdrawable_balance or 0)) }} Frw
-    </div>
+            </div>
 
-    <div class="balance-note">
-        Your total balance including saved money and earnings
-    </div>
-
-    <div style="margin-top: 16px; display: grid; gap: 8px;">
-
-        <div style="display: flex; justify-content: space-between; gap: 12px;">
-            <span>Available Cash Out</span>
-            <strong>
-                {{ "{:,.0f}".format(user.withdrawable_balance or 0) }} Frw
-            </strong>
         </div>
 
-        <div style="display: flex; justify-content: space-between; gap: 12px;">
-            <span>Saved / Locked</span>
-            <strong>
-                {{ "{:,.0f}".format(user.saved_balance or 0) }} Frw
-            </strong>
+        <div class="balance-note" style="margin-top: 12px;">
+            Saved money is locked and cannot be withdrawn.
         </div>
 
-    </div>
-
-    <div class="balance-note" style="margin-top: 12px;">
-        Saved money is locked and cannot be withdrawn.
-    </div>
-</section>
+    </section>
 
 
-<!-- STATS -->
+    <!-- ==============================
+         STATS
+    ============================== -->
 
-<section class="cards">
+    <section class="cards">
 
-    <div class="card">
-        <div class="card-title">Total Saved</div>
-        <div class="card-value">
-            {{ "{:,.0f}".format(user.total_saved or 0) }} Frw
+        <div class="card">
+
+            <div class="card-title">
+                Total Saved
+            </div>
+
+            <div class="card-value">
+                {{ "{:,.0f}".format(user.total_saved or 0) }} Frw
+            </div>
+
         </div>
-    </div>
 
-    <div class="card">
-        <div class="card-title">Total Earned</div>
-        <div class="card-value">
-            {{ "{:,.0f}".format(user.total_earned or 0) }} Frw
+
+        <div class="card">
+
+            <div class="card-title">
+                Total Earned
+            </div>
+
+            <div class="card-value">
+                {{ "{:,.0f}".format(user.total_earned or 0) }} Frw
+            </div>
+
         </div>
-    </div>
 
-    <div class="card">
-        <div class="card-title">Withdrawn</div>
-        <div class="card-value">
-            {{ "{:,.0f}".format(user.total_withdrawn or 0) }} Frw
+
+        <div class="card">
+
+            <div class="card-title">
+                Withdrawn
+            </div>
+
+            <div class="card-value">
+                {{ "{:,.0f}".format(user.total_withdrawn or 0) }} Frw
+            </div>
+
         </div>
-    </div>
 
-    <div class="card">
-        <div class="card-title">Account</div>
-        <div class="card-value">
-            {% if user.is_active %}
-                Active
-            {% else %}
-                Inactive
-            {% endif %}
+
+        <div class="card">
+
+            <div class="card-title">
+                Account
+            </div>
+
+            <div class="card-value">
+
+                {% if user.is_active %}
+                    Active
+                {% else %}
+                    Inactive
+                {% endif %}
+
+            </div>
+
         </div>
+
+    </section>
+
+
+    <!-- ==============================
+         DAILY ACTIVITIES
+    ============================== -->
+
+    <div class="section-title">
+        Daily Activities
     </div>
 
-</section>
+
+    <div class="activity-grid">
 
 
-<!-- DAILY ACTIVITIES -->
+        <!-- ==============================
+             VIDEO ACTIVITY
+        ============================== -->
 
-<div class="section-title">
-    Daily Activities
+        <div class="activity-card
+            {% if daily_activity and daily_activity.video_completed %}
+                completed
+            {% endif %}">
+
+            <div class="activity-header">
+
+                <div class="activity-icon">
+                    ▶
+                </div>
+
+                <div class="activity-name">
+                    Watch Video
+                </div>
+
+                {% if daily_activity and daily_activity.video_completed %}
+
+                    <div class="completed-badge">
+                        Completed
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+
+            {% if video %}
+
+
+                {% if daily_activity and daily_activity.video_completed %}
+
+
+                    <div class="description">
+    Watch the video until it reaches 100% to complete your daily activity and earn your reward.
 </div>
 
-<div class="activity-grid">
 
-    <!-- VIDEO -->
+                    <div class="video-box">
 
-    <div class="activity-card
-        {% if daily_activity and daily_activity.video_completed %}
-            completed
-        {% endif %}">
-
-        <div class="activity-header">
-
-            <div class="activity-icon">
-                ▶
-            </div>
-
-            <div class="activity-name">
-                Watch Video
-            </div>
-
-            {% if daily_activity and daily_activity.video_completed %}
-                <div class="completed-badge">
-                    Completed
-                </div>
-            {% endif %}
-
-        </div>
-
-
-        {% if video %}
-
-            {% if daily_activity and daily_activity.video_completed %}
-
-                <div class="description">
-                    {{ video.description }}
-                </div>
-
-                <div class="video-box">
-                    <div class="timer">
-                        ✓ Today's video has been completed.
-                    </div>
-
-                    <div class="progress">
-                        <div
-                            class="progress-bar"
-                            style="width: 100%;"
-                        ></div>
-                    </div>
-                </div>
-
-                <button class="btn btn-primary" disabled>
-                    ✓ Video Reward Received
-                </button>
-
-                <div class="status success">
-                    Come back tomorrow for a new video.
-                </div>
-
-            {% else %}
-
-                <div class="description">
-                    {{ video.description }}
-                </div>
-
-                <div class="video-box">
-
-                    <a
-                        href="{{ video.video_url }}"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        class="video-link"
-                        id="videoLink"
-                    >
-                        ▶ Open Video
-                    </a>
-
-                    <div class="timer" id="timerText">
-                        Watch for {{ min_video_watch_seconds or 30 }} seconds
-                    </div>
-
-                    <div class="progress">
-                        <div
-                            class="progress-bar"
-                            id="videoProgress">
+                        <div class="timer">
+                            ✓ Today's video has been completed.
                         </div>
-                    </div>
 
-                </div>
+                        <div class="progress">
 
-                <button
-                    class="btn btn-primary"
-                    id="videoRewardBtn"
-                    disabled
-                >
-                    Complete Video
-                </button>
+                            <div
+                                class="progress-bar"
+                                style="width: 100%;"
+                            ></div>
 
-                <div id="videoStatus" class="status"></div>
-
-            {% endif %}
-
-        {% else %}
-
-            <div class="empty">
-                No video available today.
-            </div>
-
-        {% endif %}
-
-    </div>
-
-
-    <!-- TASK -->
-
-    <div class="activity-card
-        {% if daily_activity and daily_activity.task_completed %}
-            completed
-        {% endif %}">
-
-        <div class="activity-header">
-
-            <div class="activity-icon">
-                ✓
-            </div>
-
-            <div class="activity-name">
-                Daily Task
-            </div>
-
-            {% if daily_activity and daily_activity.task_completed %}
-
-                <div class="completed-badge">
-                    Completed
-                </div>
-
-            {% endif %}
-
-        </div>
-
-
-        {% if task %}
-
-            <div class="description">
-                {{ task.description }}
-            </div>
-
-            <div class="question">
-                {{ task.title }}
-            </div>
-
-
-            {% if daily_activity and daily_activity.task_completed %}
-
-                <div class="status success" style="display:block;">
-                    ✓ You have completed today's task.
-                </div>
-
-            {% else %}
-
-                <form id="taskForm">
-
-                    <div class="choices">
-
-                        <label class="choice">
-                            <input
-                                type="radio"
-                                name="answer"
-                                value="A"
-                            >
-                            <span class="choice-letter">A</span>
-                            <span>{{ task.option_a }}</span>
-                        </label>
-
-                        <label class="choice">
-                            <input
-                                type="radio"
-                                name="answer"
-                                value="B"
-                            >
-                            <span class="choice-letter">B</span>
-                            <span>{{ task.option_b }}</span>
-                        </label>
-
-                        <label class="choice">
-                            <input
-                                type="radio"
-                                name="answer"
-                                value="C"
-                            >
-                            <span class="choice-letter">C</span>
-                            <span>{{ task.option_c }}</span>
-                        </label>
-
-                        <label class="choice">
-                            <input
-                                type="radio"
-                                name="answer"
-                                value="D"
-                            >
-                            <span class="choice-letter">D</span>
-                            <span>{{ task.option_d }}</span>
-                        </label>
+                        </div>
 
                     </div>
 
 
                     <button
-                        type="submit"
                         class="btn btn-primary"
-                        id="taskSubmitBtn"
+                        disabled
                     >
-                        Submit Answer
+                        ✓ Video Reward Received
                     </button>
 
-                </form>
+
+                    <div class="status success">
+                        Come back tomorrow for a new video.
+                    </div>
 
 
-                <div id="taskStatus" class="status"></div>
+                {% else %}
+
+
+                    <div class="description">
+    Watch the video until it reaches 100% to complete your daily activity and earn your reward.
+</div>
+
+                    <div class="video-box">
+
+                        <!--
+                            ACTUAL VIDEO PERCENTAGE
+                            IS SHOWN ABOVE THE VIDEO.
+                        -->
+
+                        <div
+                            class="video-percentage"
+                            id="videoPercentage"
+                        >
+                            0%
+                        </div>
+
+
+                        <!--
+                            YouTube player container.
+                            The YouTube IFrame API will create
+                            the iframe inside this container.
+                        -->
+
+                        <div class="youtube-wrapper">
+
+                            <div
+                                id="youtubePlayer"
+                                title="KoraCash Daily Video"
+                            ></div>
+
+                        </div>
+
+
+                        <div
+                            class="timer"
+                            id="timerText"
+                        >
+                            Loading video...
+                        </div>
+
+
+                        <div class="progress">
+
+                            <div
+                                class="progress-bar"
+                                id="videoProgress"
+                            ></div>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="btn btn-primary"
+                        id="videoRewardBtn"
+                        disabled
+                    >
+                        Complete Video
+                    </button>
+
+
+                    <div
+                        id="videoStatus"
+                        class="status"
+                    ></div>
+
+
+                {% endif %}
+
+
+            {% else %}
+
+
+                <div class="empty">
+                    No video available today.
+                </div>
+
 
             {% endif %}
 
-        {% else %}
 
-            <div class="empty">
-                No task available today.
+        </div>
+
+
+        <!-- ==============================
+             TASK ACTIVITY
+        ============================== -->
+
+        <div class="activity-card
+            {% if daily_activity and daily_activity.task_completed %}
+                completed
+            {% endif %}">
+
+            <div class="activity-header">
+
+                <div class="activity-icon">
+                    ✓
+                </div>
+
+                <div class="activity-name">
+                    Daily Task
+                </div>
+
+                {% if daily_activity and daily_activity.task_completed %}
+
+                    <div class="completed-badge">
+                        Completed
+                    </div>
+
+                {% endif %}
+
             </div>
 
-        {% endif %}
+
+            {% if task %}
+
+                <div class="description">
+                    {{ task.description }}
+                </div>
+
+                <div class="question">
+                    {{ task.title }}
+                </div>
+
+
+                {% if daily_activity and daily_activity.task_completed %}
+
+
+                    <div
+                        class="status success"
+                        style="display:block;"
+                    >
+                        ✓ You have completed today's task.
+                    </div>
+
+
+                {% else %}
+
+
+                    <form id="taskForm">
+
+                        <div class="choices">
+
+                            <label class="choice">
+
+                                <input
+                                    type="radio"
+                                    name="answer"
+                                    value="A"
+                                >
+
+                                <span class="choice-letter">
+                                    A
+                                </span>
+
+                                <span>
+                                    {{ task.option_a }}
+                                </span>
+
+                            </label>
+
+
+                            <label class="choice">
+
+                                <input
+                                    type="radio"
+                                    name="answer"
+                                    value="B"
+                                >
+
+                                <span class="choice-letter">
+                                    B
+                                </span>
+
+                                <span>
+                                    {{ task.option_b }}
+                                </span>
+
+                            </label>
+
+
+                            <label class="choice">
+
+                                <input
+                                    type="radio"
+                                    name="answer"
+                                    value="C"
+                                >
+
+                                <span class="choice-letter">
+                                    C
+                                </span>
+
+                                <span>
+                                    {{ task.option_c }}
+                                </span>
+
+                            </label>
+
+
+                            <label class="choice">
+
+                                <input
+                                    type="radio"
+                                    name="answer"
+                                    value="D"
+                                >
+
+                                <span class="choice-letter">
+                                    D
+                                </span>
+
+                                <span>
+                                    {{ task.option_d }}
+                                </span>
+
+                            </label>
+
+                        </div>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                            id="taskSubmitBtn"
+                        >
+                            Submit Answer
+                        </button>
+
+                    </form>
+
+
+                    <div
+                        id="taskStatus"
+                        class="status"
+                    ></div>
+
+
+                {% endif %}
+
+
+            {% else %}
+
+
+                <div class="empty">
+                    No task available today.
+                </div>
+
+
+            {% endif %}
+
+
+        </div>
 
     </div>
 
-</div>
+
+    <!-- ==============================
+         QUICK LINKS
+    ============================== -->
+
+    <div class="section-title">
+        Quick Access
+    </div>
 
 
-<!-- QUICK LINKS -->
+    <div class="quick-links">
 
-<div class="section-title">
-    Quick Access
-</div>
+        <a
+            href="{{ url_for('cash_in') }}"
+            class="quick-link"
+        >
+            <span class="quick-icon">
+                💰
+            </span>
 
-<div class="quick-links">
+            Cash In
+        </a>
 
-    <a href="{{ url_for('cash_in') }}" class="quick-link">
-        <span class="quick-icon">💰</span>
-        Cash In
-    </a>
 
-    <a href="{{ url_for('cash_out') }}" class="quick-link">
-        <span class="quick-icon">💸</span>
-        Cash Out
-    </a>
+        <a
+            href="{{ url_for('cash_out') }}"
+            class="quick-link"
+        >
+            <span class="quick-icon">
+                💸
+            </span>
 
-    <a href="{{ url_for('profile') }}" class="quick-link">
-        <span class="quick-icon">👤</span>
-        Profile
-    </a>
+            Cash Out
+        </a>
 
-    <a href="{{ url_for('help_center') }}" class="quick-link">
-        <span class="quick-icon">❓</span>
-        Help Center
-    </a>
 
-</div>
+        <a
+            href="{{ url_for('profile') }}"
+            class="quick-link"
+        >
+            <span class="quick-icon">
+                👤
+            </span>
 
+            Profile
+        </a>
+
+
+        <a
+            href="{{ url_for('help_center') }}"
+            class="quick-link"
+        >
+            <span class="quick-icon">
+                ❓
+            </span>
+
+            Help Center
+        </a>
+
+    </div>
 
 </main>
 
-<!-- BOTTOM NAV -->
+
+<!-- ==============================
+     BOTTOM NAV
+============================== -->
 
 <nav class="bottom-nav">
 
-```
-<div class="nav-inner">
+    <div class="nav-inner">
 
-    <a
-        href="{{ url_for('home') }}"
-        class="nav-item active"
-    >
-        <span>⌂</span>
-        Home
-    </a>
+        <a
+            href="{{ url_for('home') }}"
+            class="nav-item active"
+        >
+            <span>⌂</span>
+            Home
+        </a>
 
-    <a
-        href="{{ url_for('cash_in') }}"
-        class="nav-item"
-    >
-        <span>＋</span>
-        Save
-    </a>
 
-    <a
-        href="{{ url_for('cash_out') }}"
-        class="nav-item"
-    >
-        <span>↗</span>
-        Withdraw
-    </a>
+        <a
+            href="{{ url_for('cash_in') }}"
+            class="nav-item"
+        >
+            <span>＋</span>
+            Save
+        </a>
 
-    <a
-        href="{{ url_for('profile') }}"
-        class="nav-item"
-    >
-        <span>◉</span>
-        Profile
-    </a>
 
-</div>
+        <a
+            href="{{ url_for('cash_out') }}"
+            class="nav-item"
+        >
+            <span>↗</span>
+            Withdraw
+        </a>
 
+
+        <a
+            href="{{ url_for('profile') }}"
+            class="nav-item"
+        >
+            <span>◉</span>
+            Profile
+        </a>
+
+    </div>
 
 </nav>
 
+
 <script>
 
-    /*
-     * VIDEO TIMER
-     */
+    /* ==========================================
+       KORACASH YOUTUBE IFRAME PLAYER
+       ACTUAL VIDEO DURATION + PROGRESS
+    ========================================== */
 
-    const videoLink = document.getElementById("videoLink");
-    const videoRewardBtn = document.getElementById("videoRewardBtn");
-    const videoProgress = document.getElementById("videoProgress");
-    const timerText = document.getElementById("timerText");
-    const videoStatus = document.getElementById("videoStatus");
 
-    const minimumSeconds = {{ min_video_watch_seconds or 30 }};
+    const youtubePlayer =
+        document.getElementById("youtubePlayer");
+
+    const videoRewardBtn =
+        document.getElementById("videoRewardBtn");
+
+    const videoProgress =
+        document.getElementById("videoProgress");
+
+    const videoPercentage =
+        document.getElementById("videoPercentage");
+
+    const timerText =
+        document.getElementById("timerText");
+
+    const videoStatus =
+        document.getElementById("videoStatus");
+
+
+    let ytPlayer = null;
+
     let watchedSeconds = 0;
-    let videoOpened = false;
+
+    let videoDuration = 0;
+
+    let videoPlaying = false;
+
+    let videoEnded = false;
+
+    let rewardSubmitting = false;
+
+    let youtubeReady = false;
+
+    let progressTimer = null;
+
+    let youtubeApiLoaded = false;
 
 
-    if (videoLink && videoRewardBtn) {
+    /* ==========================================
+       GET YOUTUBE VIDEO ID
+    ========================================== */
 
-        videoLink.addEventListener("click", function () {
+    function getYouTubeVideoId(url) {
 
-            videoOpened = true;
-
-            timerText.textContent =
-                "Watching... " + minimumSeconds + " seconds required";
-
-        });
-
-
-        const timer = setInterval(function () {
-
-            if (!videoOpened) {
-                return;
-            }
-
-            if (watchedSeconds >= minimumSeconds) {
-
-                clearInterval(timer);
-
-                videoRewardBtn.disabled = false;
-
-                timerText.textContent =
-                    "✓ Minimum watch time completed";
-
-                videoProgress.style.width = "100%";
-
-                return;
-            }
-
-            watchedSeconds++;
-
-            const percentage =
-                Math.min(
-                    100,
-                    (watchedSeconds / minimumSeconds) * 100
-                );
-
-            videoProgress.style.width =
-                percentage + "%";
-
-            timerText.textContent =
-                "Watch for " +
-                (minimumSeconds - watchedSeconds) +
-                " more seconds";
-
-        }, 1000);
+        if (!url) {
+            return null;
+        }
 
 
-        videoRewardBtn.addEventListener("click", async function () {
+        try {
 
-            videoRewardBtn.disabled = true;
+            const parsedUrl =
+                new URL(url);
 
-            try {
+            const hostname =
+                parsedUrl.hostname.toLowerCase();
 
-                const response = await fetch(
-                    "{{ url_for('confirm_video') }}",
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type":
-                                "application/x-www-form-urlencoded"
-                        },
-                        body:
-                            "watch_seconds=" +
-                            encodeURIComponent(watchedSeconds)
-                    }
-                );
+            const pathname =
+                parsedUrl.pathname;
 
 
-                const data = await response.json();
+            /*
+             * youtube.com/watch?v=VIDEO_ID
+             */
+
+            if (
+                hostname === "youtube.com" ||
+                hostname === "www.youtube.com" ||
+                hostname === "m.youtube.com"
+            ) {
+
+                const watchId =
+                    parsedUrl.searchParams.get("v");
 
 
-                if (data.success) {
-
-                    videoStatus.className =
-                        "status success";
-
-                    videoStatus.textContent =
-                        "✓ " +
-                        data.message;
-
-                    setTimeout(function () {
-                        window.location.reload();
-                    }, 1200);
-
-                } else {
-
-                    videoStatus.className =
-                        "status error";
-
-                    videoStatus.textContent =
-                        data.message || "Unable to complete video.";
-
-                    videoRewardBtn.disabled = false;
+                if (watchId) {
+                    return watchId;
                 }
 
-            } catch (error) {
 
-                videoStatus.className =
-                    "status error";
+                /*
+                 * youtube.com/embed/VIDEO_ID
+                 */
 
-                videoStatus.textContent =
-                    "Something went wrong. Please try again.";
+                if (
+                    pathname.startsWith("/embed/")
+                ) {
 
-                videoRewardBtn.disabled = false;
+                    return pathname
+                        .replace("/embed/", "")
+                        .split("/")[0];
+
+                }
+
+
+                /*
+                 * youtube.com/shorts/VIDEO_ID
+                 */
+
+                if (
+                    pathname.startsWith("/shorts/")
+                ) {
+
+                    return pathname
+                        .replace("/shorts/", "")
+                        .split("/")[0];
+
+                }
+
             }
 
-        });
+
+            /*
+             * youtu.be/VIDEO_ID
+             */
+
+            if (
+                hostname === "youtu.be" ||
+                hostname === "www.youtu.be"
+            ) {
+
+                return pathname
+                    .replace("/", "")
+                    .split("/")[0];
+
+            }
+
+        } catch (error) {
+
+            /*
+             * Fallback extraction.
+             */
+
+            const match =
+                String(url).match(
+                    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([^&?/]+)/i
+                );
+
+
+            if (match) {
+                return match[1];
+            }
+
+        }
+
+
+        return null;
 
     }
 
 
-    /*
-     * TASK SUBMISSION
-     */
+    /* ==========================================
+       SHOW VIDEO ERROR
+    ========================================== */
 
-    const taskForm = document.getElementById("taskForm");
-    const taskSubmitBtn = document.getElementById("taskSubmitBtn");
-    const taskStatus = document.getElementById("taskStatus");
+    function showVideoError(
+        title,
+        message
+    ) {
+
+        if (!youtubePlayer) {
+            return;
+        }
+
+
+        const wrapper =
+            youtubePlayer.parentElement;
+
+
+        if (!wrapper) {
+            return;
+        }
+
+
+        wrapper.innerHTML = `
+            <div class="video-placeholder">
+                <div class="video-placeholder-content">
+
+                    <div class="video-placeholder-icon">
+                        ⚠️
+                    </div>
+
+                    <div class="video-placeholder-title">
+                        ${title}
+                    </div>
+
+                    <div class="video-placeholder-text">
+                        ${message}
+                    </div>
+
+                </div>
+            </div>
+        `;
+
+
+        if (videoPercentage) {
+
+            videoPercentage.textContent =
+                "0%";
+
+        }
+
+
+        if (timerText) {
+
+            timerText.textContent =
+                "Video unavailable";
+
+        }
+
+
+        if (videoRewardBtn) {
+
+            videoRewardBtn.disabled =
+                true;
+
+        }
+
+    }
+
+
+    /* ==========================================
+       UPDATE VIDEO PROGRESS
+    ========================================== */
+
+    function updateVideoProgress() {
+
+        if (
+            !ytPlayer ||
+            !youtubeReady
+        ) {
+            return;
+        }
+
+
+        try {
+
+            const duration =
+                Number(
+                    ytPlayer.getDuration() || 0
+                );
+
+
+            const currentTime =
+                Number(
+                    ytPlayer.getCurrentTime() || 0
+                );
+
+
+            /*
+             * Duration can temporarily be 0
+             * while YouTube is still loading.
+             */
+
+            if (
+                !duration ||
+                duration <= 0
+            ) {
+
+                return;
+
+            }
+
+
+            videoDuration =
+                duration;
+
+
+            watchedSeconds =
+                Math.max(
+                    0,
+                    Math.min(
+                        currentTime,
+                        duration
+                    )
+                );
+
+
+            let percentage =
+                (
+                    watchedSeconds /
+                    duration
+                ) * 100;
+
+
+            percentage =
+                Math.max(
+                    0,
+                    Math.min(
+                        percentage,
+                        100
+                    )
+                );
+
+
+            /*
+             * If YouTube has reported ENDED,
+             * force exactly 100%.
+             */
+
+            if (videoEnded) {
+
+                percentage = 100;
+
+                watchedSeconds =
+                    duration;
+
+            }
+
+
+            const displayPercentage =
+                Number(
+                    percentage.toFixed(1)
+                );
+
+
+            if (videoPercentage) {
+
+                videoPercentage.textContent =
+                    displayPercentage + "%";
+
+            }
+
+
+            if (videoProgress) {
+
+                videoProgress.style.width =
+                    displayPercentage + "%";
+
+            }
+
+
+            if (
+                timerText &&
+                !videoEnded
+            ) {
+
+                timerText.textContent =
+                    `Watching... ${Math.floor(watchedSeconds)} / ${Math.ceil(duration)} seconds`;
+
+            }
+
+
+            if (videoEnded) {
+
+                if (videoPercentage) {
+
+                    videoPercentage.textContent =
+                        "100%";
+
+                }
+
+
+                if (videoProgress) {
+
+                    videoProgress.style.width =
+                        "100%";
+
+                }
+
+
+                if (timerText) {
+
+                    timerText.textContent =
+                        `✓ Video completed (${Math.ceil(duration)} seconds)`;
+
+                }
+
+
+                if (videoRewardBtn) {
+
+                    videoRewardBtn.disabled =
+                        false;
+
+                }
+
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Video progress error:",
+                error
+            );
+
+        }
+
+    }
+
+
+    /* ==========================================
+       START PROGRESS MONITOR
+    ========================================== */
+
+    function startProgressMonitor() {
+
+        stopProgressMonitor();
+
+
+        progressTimer =
+            setInterval(
+                function () {
+
+                    if (
+                        videoPlaying &&
+                        !videoEnded
+                    ) {
+
+                        updateVideoProgress();
+
+                    }
+
+                },
+                250
+            );
+
+
+        updateVideoProgress();
+
+    }
+
+
+    /* ==========================================
+       STOP PROGRESS MONITOR
+    ========================================== */
+
+    function stopProgressMonitor() {
+
+        if (progressTimer) {
+
+            clearInterval(
+                progressTimer
+            );
+
+            progressTimer =
+                null;
+
+        }
+
+    }
+
+
+    /* ==========================================
+       YOUTUBE API READY
+    ========================================== */
+
+    window.onYouTubeIframeAPIReady =
+        function () {
+
+            youtubeApiLoaded =
+                true;
+
+
+            createYouTubePlayer();
+
+        };
+
+
+    /* ==========================================
+       CREATE YOUTUBE PLAYER
+    ========================================== */
+
+    function createYouTubePlayer() {
+
+        if (!youtubePlayer) {
+            return;
+        }
+
+
+        if (
+            !youtubeApiLoaded ||
+            typeof YT === "undefined" ||
+            typeof YT.Player === "undefined"
+        ) {
+
+            return;
+
+        }
+
+
+        if (ytPlayer) {
+            return;
+        }
+
+
+        const originalVideoUrl =
+            {{ video.video_url|tojson if video else "null" }};
+
+
+        const videoId =
+            getYouTubeVideoId(
+                originalVideoUrl
+            );
+
+
+        if (!videoId) {
+
+            showVideoError(
+                "Video unavailable",
+                "The video link is not a valid YouTube video."
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            ytPlayer =
+                new YT.Player(
+                    "youtubePlayer",
+                    {
+
+                        videoId:
+                            videoId,
+
+                        playerVars: {
+
+                            enablejsapi: 1,
+
+                            playsinline: 1,
+
+                            rel: 0,
+
+                            modestbranding: 1,
+
+                            controls: 1,
+
+                            fs: 1,
+
+                            iv_load_policy: 3
+
+                        },
+
+
+                        events: {
+
+                            /* ======================
+                               PLAYER READY
+                            ====================== */
+
+                            onReady:
+                                function (event) {
+
+                                    youtubeReady =
+                                        true;
+
+
+                                    videoDuration =
+                                        Number(
+                                            event.target.getDuration() || 0
+                                        );
+
+
+                                    if (
+                                        videoDuration > 0
+                                    ) {
+
+                                        if (timerText) {
+
+                                            timerText.textContent =
+                                                `0 / ${Math.ceil(videoDuration)} seconds`;
+
+                                        }
+
+                                    } else {
+
+                                        if (timerText) {
+
+                                            timerText.textContent =
+                                                "▶ Press Play to start watching";
+
+                                        }
+
+                                    }
+
+
+                                    if (videoPercentage) {
+
+                                        videoPercentage.textContent =
+                                            "0%";
+
+                                    }
+
+
+                                    if (videoProgress) {
+
+                                        videoProgress.style.width =
+                                            "0%";
+
+                                    }
+
+
+                                    /*
+                                     * Ask YouTube for duration again
+                                     * shortly after player initialization.
+                                     */
+
+                                    setTimeout(
+                                        function () {
+
+                                            updateVideoProgress();
+
+                                        },
+                                        500
+                                    );
+
+                                },
+
+
+                            /* ======================
+                               PLAYER ERROR
+                            ====================== */
+
+                            onError:
+                                function (event) {
+
+                                    console.error(
+                                        "YouTube player error:",
+                                        event.data
+                                    );
+
+
+                                    let message =
+                                        "The YouTube video could not be loaded.";
+
+
+                                    if (
+                                        event.data === 2
+                                    ) {
+
+                                        message =
+                                            "The YouTube video ID is invalid.";
+
+                                    }
+
+                                    else if (
+                                        event.data === 5
+                                    ) {
+
+                                        message =
+                                            "The video cannot be played in the embedded player.";
+
+                                    }
+
+                                    else if (
+                                        event.data === 100
+                                    ) {
+
+                                        message =
+                                            "This YouTube video was removed or is unavailable.";
+
+                                    }
+
+                                    else if (
+                                        event.data === 101 ||
+                                        event.data === 150
+                                    ) {
+
+                                        message =
+                                            "This video does not allow playback inside other websites.";
+
+                                    }
+
+
+                                    showVideoError(
+                                        "Unable to play video",
+                                        message
+                                    );
+
+                                },
+
+
+                            /* ======================
+                               PLAYER STATE CHANGE
+                            ====================== */
+
+                            onStateChange:
+                                function (event) {
+
+                                    /*
+                                     * PLAYING
+                                     */
+
+                                    if (
+                                        event.data ===
+                                        YT.PlayerState.PLAYING
+                                    ) {
+
+                                        videoPlaying =
+                                            true;
+
+                                        videoEnded =
+                                            false;
+
+
+                                        videoDuration =
+                                            Number(
+                                                ytPlayer.getDuration() || videoDuration || 0
+                                            );
+
+
+                                        startProgressMonitor();
+
+
+                                        if (timerText) {
+
+                                            if (
+                                                videoDuration > 0
+                                            ) {
+
+                                                timerText.textContent =
+                                                    `Watching... ${Math.floor(watchedSeconds)} / ${Math.ceil(videoDuration)} seconds`;
+
+                                            } else {
+
+                                                timerText.textContent =
+                                                    "Watching video...";
+
+                                            }
+
+                                        }
+
+                                    }
+
+
+                                    /*
+                                     * PAUSED
+                                     */
+
+                                    else if (
+                                        event.data ===
+                                        YT.PlayerState.PAUSED
+                                    ) {
+
+                                        videoPlaying =
+                                            false;
+
+
+                                        stopProgressMonitor();
+
+
+                                        updateVideoProgress();
+
+
+                                        if (
+                                            !videoEnded &&
+                                            timerText
+                                        ) {
+
+                                            timerText.textContent =
+                                                "Video paused — press Play to continue";
+
+                                        }
+
+                                    }
+
+
+                                    /*
+                                     * ENDED
+                                     */
+
+                                    else if (
+                                        event.data ===
+                                        YT.PlayerState.ENDED
+                                    ) {
+
+                                        videoPlaying =
+                                            false;
+
+                                        videoEnded =
+                                            true;
+
+
+                                        stopProgressMonitor();
+
+
+                                        /*
+                                         * Get actual duration.
+                                         */
+
+                                        videoDuration =
+                                            Number(
+                                                ytPlayer.getDuration() || videoDuration || 0
+                                            );
+
+
+                                        watchedSeconds =
+                                            videoDuration;
+
+
+                                        /*
+                                         * Force exactly 100%.
+                                         */
+
+                                        if (videoPercentage) {
+
+                                            videoPercentage.textContent =
+                                                "100%";
+
+                                        }
+
+
+                                        if (videoProgress) {
+
+                                            videoProgress.style.width =
+                                                "100%";
+
+                                        }
+
+
+                                        if (timerText) {
+
+                                            timerText.textContent =
+                                                `✓ Video completed (${Math.ceil(videoDuration)} seconds)`;
+
+                                        }
+
+
+                                        /*
+                                         * Only now enable reward.
+                                         */
+
+                                        if (
+                                            videoRewardBtn &&
+                                            videoDuration > 0
+                                        ) {
+
+                                            videoRewardBtn.disabled =
+                                                false;
+
+                                        }
+
+
+                                        if (videoStatus) {
+
+                                            videoStatus.className =
+                                                "status success";
+
+                                            videoStatus.textContent =
+                                                "✓ Video completed. You can now claim your reward.";
+
+                                        }
+
+                                    }
+
+
+                                    /*
+                                     * BUFFERING
+                                     */
+
+                                    else if (
+                                        event.data ===
+                                        YT.PlayerState.BUFFERING
+                                    ) {
+
+                                        videoPlaying =
+                                            false;
+
+
+                                        stopProgressMonitor();
+
+
+                                        if (timerText) {
+
+                                            timerText.textContent =
+                                                "Buffering video...";
+
+                                        }
+
+                                    }
+
+
+                                    /*
+                                     * CUED
+                                     */
+
+                                    else if (
+                                        event.data ===
+                                        YT.PlayerState.CUED
+                                    ) {
+
+                                        videoPlaying =
+                                            false;
+
+
+                                        videoEnded =
+                                            false;
+
+
+                                        stopProgressMonitor();
+
+
+                                        videoDuration =
+                                            Number(
+                                                ytPlayer.getDuration() || videoDuration || 0
+                                            );
+
+
+                                        if (
+                                            videoDuration > 0 &&
+                                            timerText
+                                        ) {
+
+                                            timerText.textContent =
+                                                `0 / ${Math.ceil(videoDuration)} seconds`;
+
+                                        }
+
+                                    }
+
+
+                                    /*
+                                     * OTHER STATES
+                                     */
+
+                                    else {
+
+                                        videoPlaying =
+                                            false;
+
+
+                                        stopProgressMonitor();
+
+                                    }
+
+                                }
+
+                        }
+
+                    }
+                );
+
+        } catch (error) {
+
+            console.error(
+                "YouTube player creation error:",
+                error
+            );
+
+
+            showVideoError(
+                "Unable to load video",
+                "The YouTube player could not be initialized."
+            );
+
+        }
+
+    }
+
+
+    /* ==========================================
+       LOAD YOUTUBE IFRAME API
+    ========================================== */
+
+    function loadYouTubeAPI() {
+
+        if (!youtubePlayer) {
+            return;
+        }
+
+
+        /*
+         * If API already exists,
+         * create player immediately.
+         */
+
+        if (
+            typeof YT !== "undefined" &&
+            typeof YT.Player !== "undefined"
+        ) {
+
+            youtubeApiLoaded =
+                true;
+
+
+            createYouTubePlayer();
+
+            return;
+
+        }
+
+
+        /*
+         * Avoid loading the API twice.
+         */
+
+        if (
+            document.getElementById(
+                "youtube-iframe-api"
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        const script =
+            document.createElement(
+                "script"
+            );
+
+
+        script.id =
+            "youtube-iframe-api";
+
+
+        script.src =
+            "https://www.youtube.com/iframe_api";
+
+
+        script.async =
+            true;
+
+
+        script.onerror =
+            function () {
+
+                showVideoError(
+                    "Video unavailable",
+                    "Unable to load the YouTube video player. Please check your internet connection and try again."
+                );
+
+            };
+
+
+        document.head.appendChild(
+            script
+        );
+
+    }
+
+
+    /* ==========================================
+       COMPLETE VIDEO / GET REWARD
+    ========================================== */
+
+    if (videoRewardBtn) {
+
+        videoRewardBtn.addEventListener(
+            "click",
+            async function () {
+
+                if (rewardSubmitting) {
+                    return;
+                }
+
+
+                /*
+                 * Reward is only allowed after
+                 * YouTube reports ENDED.
+                 */
+
+                if (
+                    !videoEnded ||
+                    !videoDuration ||
+                    watchedSeconds < videoDuration
+                ) {
+
+                    return;
+
+                }
+
+
+                rewardSubmitting =
+                    true;
+
+
+                videoRewardBtn.disabled =
+                    true;
+
+
+                videoRewardBtn.textContent =
+                    "Processing...";
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "{{ url_for('confirm_video') }}",
+                            {
+
+                                method: "POST",
+
+                                headers: {
+
+                                    "Content-Type":
+                                        "application/x-www-form-urlencoded"
+
+                                },
+
+                                body:
+                                    "watch_seconds=" +
+                                    encodeURIComponent(
+                                        Math.ceil(
+                                            watchedSeconds
+                                        )
+                                    )
+
+                            }
+                        );
+
+
+                    const data =
+                        await response.json();
+
+
+                    if (data.success) {
+
+                        if (videoStatus) {
+
+                            videoStatus.className =
+                                "status success";
+
+
+                            videoStatus.textContent =
+                                "✓ " +
+                                data.message;
+
+                        }
+
+
+                        setTimeout(
+                            function () {
+
+                                window.location.reload();
+
+                            },
+                            1200
+                        );
+
+                    } else {
+
+                        if (videoStatus) {
+
+                            videoStatus.className =
+                                "status error";
+
+
+                            videoStatus.textContent =
+                                data.message ||
+                                "Unable to complete video.";
+
+                        }
+
+
+                        videoRewardBtn.disabled =
+                            false;
+
+
+                        videoRewardBtn.textContent =
+                            "Complete Video";
+
+
+                        rewardSubmitting =
+                            false;
+
+                    }
+
+                } catch (error) {
+
+                    console.error(
+                        "Reward error:",
+                        error
+                    );
+
+
+                    if (videoStatus) {
+
+                        videoStatus.className =
+                            "status error";
+
+
+                        videoStatus.textContent =
+                            "Something went wrong. Please try again.";
+
+                    }
+
+
+                    videoRewardBtn.disabled =
+                        false;
+
+
+                    videoRewardBtn.textContent =
+                        "Complete Video";
+
+
+                    rewardSubmitting =
+                        false;
+
+                }
+
+            }
+        );
+
+    }
+
+
+    /* ==========================================
+       START YOUTUBE
+    ========================================== */
+
+    loadYouTubeAPI();
+
+
+    /* ==========================================
+       TASK SUBMISSION
+       UNCHANGED
+    ========================================== */
+
+    const taskForm =
+        document.getElementById("taskForm");
+
+    const taskSubmitBtn =
+        document.getElementById("taskSubmitBtn");
+
+    const taskStatus =
+        document.getElementById("taskStatus");
 
 
     if (taskForm) {
 
-        taskForm.addEventListener("submit", async function (event) {
+        taskForm.addEventListener(
+            "submit",
+            async function (event) {
 
-            event.preventDefault();
+                event.preventDefault();
 
 
-            const selected =
-                document.querySelector(
-                    'input[name="answer"]:checked'
+                const selected =
+                    document.querySelector(
+                        'input[name="answer"]:checked'
+                    );
+
+
+                if (!selected) {
+
+                    taskStatus.className =
+                        "status error";
+
+
+                    taskStatus.textContent =
+                        "Please choose A, B, C or D.";
+
+
+                    return;
+                }
+
+
+                taskSubmitBtn.disabled =
+                    true;
+
+
+                taskSubmitBtn.textContent =
+                    "Checking...";
+
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "answer",
+                    selected.value
                 );
 
 
-            if (!selected) {
+                try {
 
-                taskStatus.className =
-                    "status error";
+                    const response =
+                        await fetch(
+                            "{{ url_for('submit_task') }}",
+                            {
 
-                taskStatus.textContent =
-                    "Please choose A, B, C or D.";
+                                method: "POST",
 
-                return;
-            }
+                                body: formData
 
-
-            taskSubmitBtn.disabled = true;
-
-            taskSubmitBtn.textContent =
-                "Checking...";
+                            }
+                        );
 
 
-            const formData = new FormData();
-
-            formData.append(
-                "answer",
-                selected.value
-            );
+                    const data =
+                        await response.json();
 
 
-            try {
+                    if (data.success) {
 
-                const response = await fetch(
-                    "{{ url_for('submit_task') }}",
-                    {
-                        method: "POST",
-                        body: formData
-                    }
-                );
+                        if (data.correct) {
+
+                            taskStatus.className =
+                                "status success";
 
 
-                const data =
-                    await response.json();
+                            taskStatus.textContent =
+                                "✓ Correct! You earned "
+                                +
+                                data.reward
+                                +
+                                " Frw.";
+
+                        } else {
+
+                            taskStatus.className =
+                                "status error";
 
 
-                if (data.success) {
+                            taskStatus.textContent =
+                                "✗ Incorrect answer. No reward for this task.";
 
-                    if (data.correct) {
+                        }
 
-                        taskStatus.className =
-                            "status success";
 
-                        taskStatus.textContent =
-                            "✓ Correct! You earned " +
-                            data.reward +
-                            " Frw.";
+                        setTimeout(
+                            function () {
+
+                                window.location.reload();
+
+                            },
+                            1400
+                        );
+
 
                     } else {
 
                         taskStatus.className =
                             "status error";
 
+
                         taskStatus.textContent =
-                            "✗ Incorrect answer. No reward for this task.";
+                            data.message ||
+                            "Unable to submit task.";
+
+
+                        taskSubmitBtn.disabled =
+                            false;
+
+
+                        taskSubmitBtn.textContent =
+                            "Submit Answer";
+
                     }
 
 
-                    setTimeout(function () {
-                        window.location.reload();
-                    }, 1400);
+                } catch (error) {
 
-                } else {
+                    console.error(
+                        "Task error:",
+                        error
+                    );
+
 
                     taskStatus.className =
                         "status error";
 
-                    taskStatus.textContent =
-                        data.message ||
-                        "Unable to submit task.";
 
-                    taskSubmitBtn.disabled = false;
+                    taskStatus.textContent =
+                        "Connection error. Please try again.";
+
+
+                    taskSubmitBtn.disabled =
+                        false;
+
 
                     taskSubmitBtn.textContent =
                         "Submit Answer";
+
                 }
 
-
-            } catch (error) {
-
-                taskStatus.className =
-                    "status error";
-
-                taskStatus.textContent =
-                    "Connection error. Please try again.";
-
-                taskSubmitBtn.disabled = false;
-
-                taskSubmitBtn.textContent =
-                    "Submit Answer";
             }
-
-        });
+        );
 
     }
 
@@ -1169,4 +2535,3 @@
 
 </body>
 </html>
-

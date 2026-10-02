@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Save - KoraCash</title>
+    <title>Save &amp; Earn for 4 Months - KoraCash</title>
 
 <style>
     * {
@@ -440,337 +439,328 @@
 <header class="header">
     <div class="header-inner">
 
-```
-    <a href="{{ url_for('home') }}" class="back">
-        ← Home
-    </a>
+        <a href="{{ url_for('home') }}" class="back">
+            ← Home
+        </a>
 
-    <h1>Save</h1>
+        <h1>Save &amp; Earn for 4 Months</h1>
 
-    <p>
-        Choose your saving plan and submit your payment proof.
-    </p>
+        <p>
+            Save today and start earning for the next 4 months.
+        </p>
 
-</div>
-```
-
+    </div>
 </header>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 
-```
-{% for category, message in messages %}
+    {% for category, message in messages %}
 
-    <div class="flash {{ category }}">
-        {{ message }}
-    </div>
+        <div class="flash {{ category }}">
+            {{ message }}
+        </div>
 
-{% endfor %}
-```
+    {% endfor %}
 
 {% endif %}
 {% endwith %}
 
 <main class="container">
 
-```
-<div class="card">
+    <div class="card">
 
-    <h2>Choose Your Saving Plan</h2>
-
-    <p class="muted">
-        Select the plan you want to save. Your selected plan
-        determines the daily rewards available to your account.
-    </p>
-
-    <div class="plans">
-
-        <!-- PLAN 3,000 -->
-        <div class="plan-option">
-
-            <input
-                type="radio"
-                id="plan3000"
-                name="plan_selector"
-                value="3000"
-            >
-
-            <label
-                for="plan3000"
-                class="plan-card"
-            >
-
-                <div class="plan-icon">
-                    💰
-                </div>
-
-                <div class="plan-name">
-                    Plan 3,000
-                </div>
-
-                <div class="plan-amount">
-                    3,000 Frw
-                </div>
-
-                <div class="plan-info">
-                    Save 3,000 Frw and access
-                    your daily activities.
-                </div>
-
-                <div class="plan-reward">
-                    🎬 Video: 300 Frw/day<br>
-                    📝 Task: 300 Frw/day<br>
-                    💵 Daily Total: 600 Frw
-                </div>
-
-            </label>
-
-        </div>
-
-        <!-- PLAN 6,000 -->
-        <div class="plan-option">
-
-            <input
-                type="radio"
-                id="plan6000"
-                name="plan_selector"
-                value="6000"
-            >
-
-            <label
-                for="plan6000"
-                class="plan-card"
-            >
-
-                <div class="plan-icon">
-                    💎
-                </div>
-
-                <div class="plan-name">
-                    Plan 6,000
-                </div>
-
-                <div class="plan-amount">
-                    6,000 Frw
-                </div>
-
-                <div class="plan-info">
-                    Save 6,000 Frw and access
-                    your daily activities.
-                </div>
-
-                <div class="plan-reward">
-                    🎬 Video: 600 Frw/day<br>
-                    📝 Task: 600 Frw/day<br>
-                    💵 Daily Total: 1,200 Frw
-                </div>
-
-            </label>
-
-        </div>
-
-    </div>
-
-    <div
-        id="selectedText"
-        class="selected-text"
-    >
-        Selected plan: None
-    </div>
-
-    <div class="payment-box">
-
-        <div class="payment-label">
-            Send your payment to
-        </div>
-
-        <div class="payment-number">
-            {{ payment_number }}
-        </div>
-
-        <a
-            href="tel:{{ payment_number }}"
-            class="call-btn"
-        >
-            📞 Call Now
-        </a>
-
-    </div>
-
-    <form
-        method="POST"
-        action="{{ url_for('cash_in') }}"
-        id="saveForm"
-        enctype="multipart/form-data"
-    >
-
-        <input
-            type="hidden"
-            name="amount"
-            id="amount"
-            value=""
-        >
-
-        <div class="proof-section">
-
-            <div class="proof-title">
-                📸 Upload MoMo Payment Message
-            </div>
-
-            <div class="proof-description">
-                After sending the money, take a screenshot of
-                your MoMo confirmation message and upload it
-                here. The admin will review it before approving
-                your Save request.
-            </div>
-
-            <label
-                for="paymentProof"
-                class="upload-box"
-            >
-
-                <div class="upload-icon">
-                    📤
-                </div>
-
-                <span class="upload-label">
-                    Tap to upload MoMo screenshot
-                </span>
-
-                <div class="upload-hint">
-                    JPG, JPEG, PNG or WEBP
-                </div>
-
-            </label>
-
-            <input
-                type="file"
-                name="payment_proof"
-                id="paymentProof"
-                accept="image/jpeg,image/png,image/webp"
-                required
-            >
-
-            <div
-                id="fileName"
-                class="file-name"
-            ></div>
-
-        </div>
-
-        <button
-            type="submit"
-            class="save-btn"
-            id="saveButton"
-            disabled
-        >
-            Choose a Plan First
-        </button>
-
-    </form>
-
-    <div class="notice">
-
-        Your payment request will remain
-        <strong>Pending</strong> until an admin reviews
-        your payment proof and confirms the payment.
-
-    </div>
-
-    <div class="admin-note">
-
-        🔐 <strong>Manual Verification:</strong>
-        KoraCash does not automatically approve payments.
-        Your uploaded MoMo screenshot will be reviewed by
-        an admin before your saved balance is updated.
-
-    </div>
-
-</div>
-
-<div class="card">
-
-    <h2>Cash In History</h2>
-
-    {% if cash_ins %}
-
-        {% for item in cash_ins %}
-
-            <div class="history-item">
-
-                <div>
-
-                    <div class="history-amount">
-                        {{ "{:,}".format(item["amount"]) }} Frw
-                    </div>
-
-                    <div class="history-date">
-                        {{ item["created_at"][:16].replace("T", " ") }}
-                    </div>
-
-                </div>
-
-                <span class="status {{ item['status'] }}">
-                    {{ item["status"] }}
-                </span>
-
-            </div>
-
-        {% endfor %}
-
-    {% else %}
+        <h2>Choose Your Saving Plan</h2>
 
         <p class="muted">
-            No Cash In transactions yet.
+            Select the plan you want to save. Your selected plan
+            determines the daily rewards available to your account.
         </p>
 
-    {% endif %}
+        <div class="plans">
 
-</div>
-```
+            <!-- PLAN 3,000 -->
+            <div class="plan-option">
+
+                <input
+                    type="radio"
+                    id="plan3000"
+                    name="plan_selector"
+                    value="3000"
+                >
+
+                <label
+                    for="plan3000"
+                    class="plan-card"
+                >
+
+                    <div class="plan-icon">
+                        💰
+                    </div>
+
+                    <div class="plan-name">
+                        Plan 3,000
+                    </div>
+
+                    <div class="plan-amount">
+                        3,000 Frw
+                    </div>
+
+                    <div class="plan-info">
+                        Save 3,000 Frw and access
+                        your daily activities.
+                    </div>
+
+                    <div class="plan-reward">
+                        🎬 Video: 300 Frw/day<br>
+                        📝 Task: 300 Frw/day<br>
+                        💵 Daily Total: 600 Frw
+                    </div>
+
+                </label>
+
+            </div>
+
+            <!-- PLAN 6,000 -->
+            <div class="plan-option">
+
+                <input
+                    type="radio"
+                    id="plan6000"
+                    name="plan_selector"
+                    value="6000"
+                >
+
+                <label
+                    for="plan6000"
+                    class="plan-card"
+                >
+
+                    <div class="plan-icon">
+                        💎
+                    </div>
+
+                    <div class="plan-name">
+                        Plan 6,000
+                    </div>
+
+                    <div class="plan-amount">
+                        6,000 Frw
+                    </div>
+
+                    <div class="plan-info">
+                        Save 6,000 Frw and access
+                        your daily activities.
+                    </div>
+
+                    <div class="plan-reward">
+                        🎬 Video: 600 Frw/day<br>
+                        📝 Task: 600 Frw/day<br>
+                        💵 Daily Total: 1,200 Frw
+                    </div>
+
+                </label>
+
+            </div>
+
+        </div>
+
+        <div
+            id="selectedText"
+            class="selected-text"
+        >
+            Selected plan: None
+        </div>
+
+        <div class="payment-box">
+
+            <div class="payment-label">
+                Send your payment to
+            </div>
+
+            <div class="payment-number">
+                {{ payment_number }}
+            </div>
+
+            <a
+                href="tel:{{ payment_number }}"
+                class="call-btn"
+            >
+                📞 Call Now
+            </a>
+
+        </div>
+
+        <form
+            method="POST"
+            action="{{ url_for('cash_in') }}"
+            id="saveForm"
+            enctype="multipart/form-data"
+        >
+
+            <input
+                type="hidden"
+                name="amount"
+                id="amount"
+                value=""
+            >
+
+            <div class="proof-section">
+
+                <div class="proof-title">
+                    📸 Upload MoMo Payment Message
+                </div>
+
+                <div class="proof-description">
+                    After sending the money, take a screenshot of
+                    your MoMo confirmation message and upload it
+                    here. The admin will review it before approving
+                    your Save request.
+                </div>
+
+                <label
+                    for="paymentProof"
+                    class="upload-box"
+                >
+
+                    <div class="upload-icon">
+                        📤
+                    </div>
+
+                    <span class="upload-label">
+                        Tap to upload MoMo screenshot
+                    </span>
+
+                    <div class="upload-hint">
+                        JPG, JPEG, PNG or WEBP
+                    </div>
+
+                </label>
+
+                <input
+                    type="file"
+                    name="payment_proof"
+                    id="paymentProof"
+                    accept="image/jpeg,image/png,image/webp"
+                    required
+                >
+
+                <div
+                    id="fileName"
+                    class="file-name"
+                ></div>
+
+            </div>
+
+            <button
+                type="submit"
+                class="save-btn"
+                id="saveButton"
+                disabled
+            >
+                Choose a Plan First
+            </button>
+
+        </form>
+
+        <div class="notice">
+
+            Your payment request will remain
+            <strong>Pending</strong> until an admin reviews
+            your payment proof and confirms the payment.
+
+        </div>
+
+        <div class="admin-note">
+
+            🔐 <strong>Manual Verification:</strong>
+            KoraCash does not automatically approve payments.
+            Your uploaded MoMo screenshot will be reviewed by
+            an admin before your saved balance is updated.
+
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <h2>Cash In History</h2>
+
+        {% if cash_ins %}
+
+            {% for item in cash_ins %}
+
+                <div class="history-item">
+
+                    <div>
+
+                        <div class="history-amount">
+                            {{ "{:,}".format(item["amount"]) }} Frw
+                        </div>
+
+                        <div class="history-date">
+                            {{ item["created_at"][:16].replace("T", " ") }}
+                        </div>
+
+                    </div>
+
+                    <span class="status {{ item['status'] }}">
+                        {{ item["status"] }}
+                    </span>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p class="muted">
+                No Cash In transactions yet.
+            </p>
+
+        {% endif %}
+
+    </div>
 
 </main>
 
 <nav class="bottom-nav">
 
-```
-<div class="nav-inner">
+    <div class="nav-inner">
 
-    <a
-        href="{{ url_for('home') }}"
-        class="nav-item"
-    >
-        <span class="nav-icon">⌂</span>
-        <span>Home</span>
-    </a>
+        <a
+            href="{{ url_for('home') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">⌂</span>
+            <span>Home</span>
+        </a>
 
-    <a
-        href="{{ url_for('cash_in') }}"
-        class="nav-item active"
-    >
-        <span class="nav-icon">＋</span>
-        <span>Save</span>
-    </a>
+        <a
+            href="{{ url_for('cash_in') }}"
+            class="nav-item active"
+        >
+            <span class="nav-icon">＋</span>
+            <span>Save</span>
+        </a>
 
-    <a
-        href="{{ url_for('cash_out') }}"
-        class="nav-item"
-    >
-        <span class="nav-icon">↗</span>
-        <span>Cash Out</span>
-    </a>
+        <a
+            href="{{ url_for('cash_out') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">↗</span>
+            <span>Cash Out</span>
+        </a>
 
-    <a
-        href="{{ url_for('profile') }}"
-        class="nav-item"
-    >
-        <span class="nav-icon">◯</span>
-        <span>Profile</span>
-    </a>
+        <a
+            href="{{ url_for('profile') }}"
+            class="nav-item"
+        >
+            <span class="nav-icon">◯</span>
+            <span>Profile</span>
+        </a>
 
-</div>
-```
+    </div>
 
 </nav>
 
