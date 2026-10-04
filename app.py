@@ -28,6 +28,7 @@ from werkzeug.security import (
 from werkzeug.utils import secure_filename
 
 from dotenv import load_dotenv
+import resend
 
 
 # ============================================================
@@ -38,7 +39,106 @@ from dotenv import load_dotenv
 # ============================================================
 
 load_dotenv()
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL")
+RESEND_FROM_EMAIL = os.getenv(
+    "RESEND_FROM_EMAIL",
+    "onboarding@resend.dev",
+)
 
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
+def send_save_request_email(amount, user_id):
+    if not RESEND_API_KEY or not ADMIN_EMAIL:
+        print("[EMAIL] RESEND_API_KEY or ADMIN_EMAIL is missing.")
+        return False
+
+    try:
+        review_url = (
+            "https://koracash.onrender.com"
+            "/admin/save-requests"
+        )
+
+        resend.Emails.send(
+            {
+                "from": RESEND_FROM_EMAIL,
+                "to": [ADMIN_EMAIL],
+                "subject": "🔔 New Save Request – KoraCash",
+                "html": f"""
+                <div style="font-family: Arial, sans-serif;
+                            line-height: 1.6;
+                            max-width: 600px;
+                            margin: auto;">
+
+                    <h2>🔔 New Save Request</h2>
+
+                    <p>
+                        A new Save request has been submitted
+                        on KoraCash.
+                    </p>
+
+                    <div style="background:#f5f5f5;
+                                padding:15px;
+                                border-radius:8px;">
+
+                        <p>
+                            <strong>Amount:</strong>
+                            {amount:,} Frw
+                        </p>
+
+                        <p>
+                            <strong>User ID:</strong>
+                            {user_id}
+                        </p>
+
+                        <p>
+                            <strong>Status:</strong>
+                            Pending Approval
+                        </p>
+
+                    </div>
+
+                    <p>
+                        Please review the payment screenshot
+                        and approve or reject this Save request.
+                    </p>
+
+                    <p style="margin-top:25px;">
+                        <a href="{review_url}"
+                           style="
+                           display:inline-block;
+                           padding:12px 22px;
+                           background:#198754;
+                           color:white;
+                           text-decoration:none;
+                           border-radius:6px;
+                           font-weight:bold;
+                           ">
+                            🟢 Review Save Request
+                        </a>
+                    </p>
+
+                    <p style="font-size:13px;color:#777;">
+                        KoraCash Admin Notification
+                    </p>
+
+                </div>
+                """,
+            }
+        )
+
+        print(
+            "[EMAIL] Save request notification sent successfully."
+        )
+
+        return True
+
+    except Exception as error:
+        print(
+            "[EMAIL ERROR] Save request notification failed:",
+            error,
+        )
+        return False
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 DATABASE = os.path.join(
@@ -3245,12 +3345,21 @@ def cash_in():
 
             conn.close()
 
+        # ----------------------------------------------------
+        # Notify admin by email after the Save request has
+        # been successfully committed to the database.
+        # ----------------------------------------------------
+
+        send_save_request_email(
+            selected_plan,
+            user["id"],
+        )
+
         flash(
             (
                 f"{selected_plan:,} Frw Save request "
-                "submitted successfully. Your payment "
-                "screenshot has been uploaded and is "
-                "waiting for admin approval."
+                "submitted ✅ Please stay here for at least "
+                "3 minutes while we verify your payment."
             ),
             "success",
         )
@@ -3260,7 +3369,6 @@ def cash_in():
         )
 
     conn = get_db()
-
     try:
 
         cash_ins = conn.execute(
