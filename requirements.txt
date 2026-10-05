@@ -5,3 +5,5 @@ python-dotenv
 Werkzeug
 gunicorn
 resend
+Flask-Limiter
+redis

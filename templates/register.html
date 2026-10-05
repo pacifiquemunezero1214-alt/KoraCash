@@ -1,306 +1,478 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Create Account - KoraCash</title>
+```
+<title>Create Account - KoraCash</title>
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
 
+    body {
+        font-family: Arial, sans-serif;
+        min-height: 100vh;
+        background:
+            linear-gradient(
+                135deg,
+                rgba(4, 35, 70, 0.92),
+                rgba(0, 128, 120, 0.88)
+            ),
+            url("https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80");
+
+        background-size: cover;
+        background-position: center;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 25px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 430px;
+    }
+
+    .brand {
+        text-align: center;
+        color: white;
+        margin-bottom: 20px;
+    }
+
+    .brand h1 {
+        font-size: 34px;
+        font-weight: 800;
+        letter-spacing: 1px;
+    }
+
+    .brand p {
+        margin-top: 7px;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+
+    .card {
+        background: rgba(255, 255, 255, 0.97);
+        border-radius: 25px;
+        padding: 28px 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+    }
+
+    .welcome {
+        margin-bottom: 22px;
+    }
+
+    .welcome h2 {
+        color: #102a43;
+        font-size: 25px;
+    }
+
+    .welcome p {
+        color: #718096;
+        font-size: 14px;
+        margin-top: 6px;
+    }
+
+    .bonus {
+        background: linear-gradient(135deg, #e8fff5, #d9fff0);
+        border: 1px solid #b8f0d5;
+        border-radius: 16px;
+        padding: 14px;
+        margin-bottom: 20px;
+    }
+
+    .bonus strong {
+        display: block;
+        color: #087443;
+        font-size: 18px;
+        margin-bottom: 4px;
+    }
+
+    .bonus span {
+        color: #3d6655;
+        font-size: 13px;
+    }
+
+    .field {
+        margin-bottom: 16px;
+    }
+
+    .field label {
+        display: block;
+        color: #334e68;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 7px;
+    }
+
+    .input-wrap {
+        position: relative;
+        width: 100%;
+    }
+
+    .field input {
+        width: 100%;
+        border: 1px solid #d9e2ec;
+        border-radius: 13px;
+        padding: 14px 48px 14px 42px;
+        font-size: 15px;
+        outline: none;
+        transition: 0.2s;
+        background: white;
+    }
+
+    .field input:focus {
+        border-color: #008f83;
+        box-shadow: 0 0 0 3px rgba(0, 143, 131, 0.1);
+    }
+
+    .lock-icon {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 17px;
+        color: #718096;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .toggle-password {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 36px;
+        height: 36px;
+        border: none;
+        background: transparent;
+        color: #718096;
+        cursor: pointer;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        transition: 0.2s;
+    }
+
+    .toggle-password:hover {
+        background: #edf7f6;
+        color: #008f83;
+    }
+
+    .toggle-password:focus {
+        outline: 2px solid rgba(0, 143, 131, 0.2);
+        outline-offset: 1px;
+    }
+
+    .register-btn {
+        width: 100%;
+        border: none;
+        border-radius: 14px;
+        padding: 15px;
+        background: linear-gradient(135deg, #008f83, #006f68);
+        color: white;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: 0.2s;
+        box-shadow: 0 8px 20px rgba(0, 111, 104, 0.25);
+    }
+
+    .register-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .login-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+        color: #718096;
+    }
+
+    .login-link a {
+        color: #008f83;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .flash {
+        padding: 12px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        font-size: 13px;
+    }
+
+    .flash.success {
+        background: #e8fff3;
+        color: #087443;
+    }
+
+    .flash.danger {
+        background: #fff0f0;
+        color: #b42318;
+    }
+
+    .flash.warning {
+        background: #fff8e6;
+        color: #8a5a00;
+    }
+
+    .terms {
+        margin-top: 15px;
+        color: #8a94a6;
+        font-size: 11px;
+        line-height: 1.5;
+        text-align: center;
+    }
+
+    @media (max-width: 480px) {
         body {
-            font-family: Arial, sans-serif;
-            min-height: 100vh;
-            background:
-                linear-gradient(
-                    135deg,
-                    rgba(4, 35, 70, 0.92),
-                    rgba(0, 128, 120, 0.88)
-                ),
-                url("https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80");
-
-            background-size: cover;
-            background-position: center;
-
-            display: flex;
-            align-items: center;
-            justify-content: center;
-
-            padding: 25px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 430px;
-        }
-
-        .brand {
-            text-align: center;
-            color: white;
-            margin-bottom: 20px;
-        }
-
-        .brand h1 {
-            font-size: 34px;
-            font-weight: 800;
-            letter-spacing: 1px;
-        }
-
-        .brand p {
-            margin-top: 7px;
-            font-size: 14px;
-            opacity: 0.9;
+            padding: 15px;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.97);
-            border-radius: 25px;
-            padding: 28px 24px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            padding: 23px 18px;
+            border-radius: 21px;
         }
 
-        .welcome {
-            margin-bottom: 22px;
+        .brand h1 {
+            font-size: 30px;
         }
+    }
+</style>
+```
 
-        .welcome h2 {
-            color: #102a43;
-            font-size: 25px;
-        }
-
-        .welcome p {
-            color: #718096;
-            font-size: 14px;
-            margin-top: 6px;
-        }
-
-        .bonus {
-            background: linear-gradient(135deg, #e8fff5, #d9fff0);
-            border: 1px solid #b8f0d5;
-            border-radius: 16px;
-            padding: 14px;
-            margin-bottom: 20px;
-        }
-
-        .bonus strong {
-            display: block;
-            color: #087443;
-            font-size: 18px;
-            margin-bottom: 4px;
-        }
-
-        .bonus span {
-            color: #3d6655;
-            font-size: 13px;
-        }
-
-        .field {
-            margin-bottom: 16px;
-        }
-
-        .field label {
-            display: block;
-            color: #334e68;
-            font-size: 13px;
-            font-weight: 700;
-            margin-bottom: 7px;
-        }
-
-        .field input {
-            width: 100%;
-            border: 1px solid #d9e2ec;
-            border-radius: 13px;
-            padding: 14px;
-            font-size: 15px;
-            outline: none;
-            transition: 0.2s;
-        }
-
-        .field input:focus {
-            border-color: #008f83;
-            box-shadow: 0 0 0 3px rgba(0, 143, 131, 0.1);
-        }
-
-        .register-btn {
-            width: 100%;
-            border: none;
-            border-radius: 14px;
-            padding: 15px;
-            background: linear-gradient(135deg, #008f83, #006f68);
-            color: white;
-            font-size: 16px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 8px 20px rgba(0, 111, 104, 0.25);
-        }
-
-        .register-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .login-link {
-            text-align: center;
-            margin-top: 20px;
-            font-size: 14px;
-            color: #718096;
-        }
-
-        .login-link a {
-            color: #008f83;
-            font-weight: 800;
-            text-decoration: none;
-        }
-
-        .flash {
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            font-size: 13px;
-        }
-
-        .flash.success {
-            background: #e8fff3;
-            color: #087443;
-        }
-
-        .flash.danger {
-            background: #fff0f0;
-            color: #b42318;
-        }
-
-        .flash.warning {
-            background: #fff8e6;
-            color: #8a5a00;
-        }
-
-        .terms {
-            margin-top: 15px;
-            color: #8a94a6;
-            font-size: 11px;
-            line-height: 1.5;
-            text-align: center;
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 15px;
-            }
-
-            .card {
-                padding: 23px 18px;
-                border-radius: 21px;
-            }
-
-            .brand h1 {
-                font-size: 30px;
-            }
-        }
-    </style>
 </head>
 
 <body>
 
 <div class="container">
 
-    <div class="brand">
-        <h1>KoraCash</h1>
-        <p>Save • Earn • Grow</p>
+```
+<div class="brand">
+    <h1>KoraCash</h1>
+    <p>Save • Earn • Grow</p>
+</div>
+
+<div class="card">
+
+    <div class="welcome">
+        <h2>Create your account</h2>
+        <p>Start your KoraCash journey today.</p>
     </div>
 
-    <div class="card">
+    <div class="bonus">
+        <strong>🎁 Get 1,500 Frw Bonus</strong>
+        <span>Receive your registration bonus after creating your account.</span>
+    </div>
 
-        <div class="welcome">
-            <h2>Create your account</h2>
-            <p>Start your KoraCash journey today.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form
+        method="POST"
+        action="{{ url_for('register') }}"
+        autocomplete="off"
+    >
+
+        <div class="field">
+            <label>Phone Number</label>
+
+            <input
+                type="tel"
+                name="phone"
+                placeholder="07XXXXXXXX"
+                required
+                autocomplete="off"
+            >
         </div>
 
-        <div class="bonus">
-            <strong>🎁 Get 1,500 Frw Bonus</strong>
-            <span>Receive your registration bonus after creating your account.</span>
-        </div>
+        <div class="field">
+            <label>Password</label>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="flash {{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+            <div class="input-wrap">
 
-        <form method="POST" action="{{ url_for('register') }}">
+                <span class="lock-icon">🔒</span>
 
-            <div class="field">
-                <label>Phone Number</label>
-                <input
-                    type="tel"
-                    name="phone"
-                    placeholder="07XXXXXXXX"
-                    required
-                    autocomplete="tel"
-                >
-            </div>
-
-            <div class="field">
-                <label>Password</label>
                 <input
                     type="password"
                     name="password"
+                    id="registerPassword"
                     placeholder="At least 6 characters"
                     minlength="6"
                     required
                     autocomplete="new-password"
                 >
-            </div>
 
-            <div class="field">
-                <label>Confirm Password</label>
+                <button
+                    type="button"
+                    class="toggle-password"
+                    id="toggleRegisterPassword"
+                    aria-label="Show password"
+                    title="Show password"
+                >
+                    👁
+                </button>
+
+            </div>
+        </div>
+
+        <div class="field">
+            <label>Confirm Password</label>
+
+            <div class="input-wrap">
+
+                <span class="lock-icon">🔒</span>
+
                 <input
                     type="password"
                     name="confirm_password"
+                    id="confirmRegisterPassword"
                     placeholder="Repeat your password"
                     minlength="6"
                     required
                     autocomplete="new-password"
                 >
-            </div>
 
-            <div class="field">
-                <label>Referral Code <span style="font-weight:400;">(Optional)</span></label>
-                <input
-                    type="text"
-                    name="referral_code"
-                    value="{{ request.args.get('ref', '') }}"
-                    placeholder="KC-XXXXXXXX"
-                    autocomplete="off"
+                <button
+                    type="button"
+                    class="toggle-password"
+                    id="toggleConfirmRegisterPassword"
+                    aria-label="Show password"
+                    title="Show password"
                 >
+                    👁
+                </button>
+
             </div>
-
-            <button type="submit" class="register-btn">
-                Create Account
-            </button>
-
-        </form>
-
-        <div class="login-link">
-            Already have an account?
-            <a href="{{ url_for('login') }}">Login</a>
         </div>
 
-        <div class="terms">
-            By creating an account, you agree to use KoraCash responsibly.
+        <div class="field">
+            <label>
+                Referral Code
+                <span style="font-weight:400;">(Optional)</span>
+            </label>
+
+            <input
+                type="text"
+                name="referral_code"
+                value="{{ request.args.get('ref', '') }}"
+                placeholder="KC-XXXXXXXX"
+                autocomplete="off"
+            >
         </div>
 
+        <button type="submit" class="register-btn">
+            Create Account
+        </button>
+
+    </form>
+
+    <div class="login-link">
+        Already have an account?
+        <a href="{{ url_for('login') }}">Login</a>
+    </div>
+
+    <div class="terms">
+        By creating an account, you agree to use KoraCash responsibly.
     </div>
 
 </div>
+```
+
+</div>
+
+<script>
+
+    function setupPasswordToggle(
+        inputId,
+        buttonId
+    ) {
+
+        const passwordInput =
+            document.getElementById(inputId);
+
+        const toggleButton =
+            document.getElementById(buttonId);
+
+        if (!passwordInput || !toggleButton) {
+            return;
+        }
+
+        toggleButton.addEventListener(
+            "click",
+            function() {
+
+                const isHidden =
+                    passwordInput.type === "password";
+
+                if (isHidden) {
+
+                    passwordInput.type = "text";
+
+                    toggleButton.textContent = "🙈";
+
+                    toggleButton.setAttribute(
+                        "aria-label",
+                        "Hide password"
+                    );
+
+                    toggleButton.setAttribute(
+                        "title",
+                        "Hide password"
+                    );
+
+                } else {
+
+                    passwordInput.type = "password";
+
+                    toggleButton.textContent = "👁";
+
+                    toggleButton.setAttribute(
+                        "aria-label",
+                        "Show password"
+                    );
+
+                    toggleButton.setAttribute(
+                        "title",
+                        "Show password"
+                    );
+                }
+
+            }
+        );
+    }
+
+
+    setupPasswordToggle(
+        "registerPassword",
+        "toggleRegisterPassword"
+    );
+
+
+    setupPasswordToggle(
+        "confirmRegisterPassword",
+        "toggleConfirmRegisterPassword"
+    );
+
+</script>
 
 </body>
 </html>
