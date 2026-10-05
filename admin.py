@@ -982,11 +982,62 @@ def complete_cash_in(cash_in_id):
 
         from app import confirm_cash_in
 
-        return confirm_cash_in(
+        result = confirm_cash_in(
             cash_in_id
         )
 
-    except Exception:
+        # ----------------------------------------------------
+        # confirm_cash_in() returns a JSON response.
+        # We only need its data here, then redirect the admin
+        # back to the dashboard instead of showing raw JSON.
+        # ----------------------------------------------------
+
+        if hasattr(result, "get_json"):
+
+            data = result.get_json(
+                silent=True
+            ) or {}
+
+        elif isinstance(result, dict):
+
+            data = result
+
+        else:
+
+            data = {}
+
+        if data.get("success"):
+
+            flash(
+                data.get(
+                    "message",
+                    "Cash In completed successfully."
+                ),
+                "success"
+            )
+
+        else:
+
+            flash(
+                data.get(
+                    "message",
+                    "Unable to complete Cash In."
+                ),
+                "error"
+            )
+
+        return redirect(
+            url_for(
+                "admin.admin_dashboard"
+            )
+        )
+
+    except Exception as e:
+
+        print(
+            "ADMIN CASH IN COMPLETE ERROR:",
+            e
+        )
 
         flash(
             "Unable to complete Cash In.",
@@ -998,131 +1049,6 @@ def complete_cash_in(cash_in_id):
                 "admin.admin_dashboard"
             )
         )
-
-
-# ============================================================
-# CASH IN - REJECT
-# ============================================================
-
-@admin_bp.route(
-    "/cash-in/<int:cash_in_id>/reject",
-    methods=["POST"]
-)
-def reject_cash_in(cash_in_id):
-
-    if not admin_required():
-        return redirect(url_for("login"))
-
-    conn = get_db()
-
-    try:
-
-        cash_in = execute_db(
-            conn,
-            """
-            SELECT *
-            FROM cash_ins
-            WHERE id=?
-            LIMIT 1
-            """,
-            (cash_in_id,)
-        ).fetchone()
-
-        if not cash_in:
-
-            flash(
-                "Cash In request not found.",
-                "error"
-            )
-
-            return redirect(
-                url_for(
-                    "admin.admin_dashboard"
-                )
-            )
-
-        if cash_in["status"] != "Pending":
-
-            flash(
-                "This Cash In has already been processed.",
-                "info"
-            )
-
-            return redirect(
-                url_for(
-                    "admin.admin_dashboard"
-                )
-            )
-
-        execute_db(
-            conn,
-            """
-            UPDATE cash_ins
-            SET status='Rejected'
-            WHERE id=?
-            AND status='Pending'
-            """,
-            (cash_in_id,)
-        )
-
-        if table_exists(
-            conn,
-            "notifications"
-        ):
-
-            execute_db(
-                conn,
-                """
-                INSERT INTO notifications
-                (
-                    user_id,
-                    title,
-                    message,
-                    is_read,
-                    created_at
-                )
-                VALUES
-                (?, ?, ?, 0, ?)
-                """,
-                (
-                    cash_in["user_id"],
-                    "Cash In Rejected",
-                    "Your Cash In request was rejected.",
-                    now_iso()
-                )
-            )
-
-        conn.commit()
-
-        flash(
-            "Cash In rejected successfully.",
-            "success"
-        )
-
-    except Exception as e:
-
-        conn.rollback()
-
-        print(
-            "ADMIN CASH IN REJECT ERROR:",
-            e
-        )
-
-        flash(
-            "Unable to reject Cash In.",
-            "error"
-        )
-
-    finally:
-
-        conn.close()
-
-    return redirect(
-        url_for(
-            "admin.admin_dashboard"
-        )
-    )
-
 
 # ============================================================
 # CASH OUT - COMPLETE
