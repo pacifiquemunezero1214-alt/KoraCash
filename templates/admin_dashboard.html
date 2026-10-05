@@ -1194,6 +1194,27 @@
 
                                     <td>
                                         {{ cash.created_at|default("-") }}
+<td>
+    {% if cash.payment_proof %}
+
+        <a
+            href="{{ url_for('static', filename='uploads/payment_proofs/' ~ cash.payment_proof) }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="small-button"
+            style="display:inline-block;text-decoration:none;"
+        >
+            👁 View Proof
+        </a>
+
+    {% else %}
+
+        <span class="muted">
+            No proof
+        </span>
+
+    {% endif %}
+</td>
                                     </td>
 
                                     <td>
@@ -1297,15 +1318,15 @@
 
                         <thead>
 
-                            <tr>
-                                <th>User</th>
-                                <th>Amount</th>
-                                <th>Network</th>
-                                <th>Destination</th>
-                                <th>Status</th>
-                                <th>Date</th>
-                                <th>Action</th>
-                            </tr>
+                          <tr>
+    <th>User</th>
+    <th>Amount</th>
+    <th>Reference</th>
+    <th>Status</th>
+    <th>Date</th>
+    <th>Payment Proof</th>
+    <th>Action</th>
+</tr>
 
                         </thead>
 
