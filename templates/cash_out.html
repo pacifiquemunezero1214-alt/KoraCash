@@ -1,7 +1,8 @@
-```html
+﻿```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
@@ -329,7 +330,7 @@
     <div class="header-inner">
 
         <a href="{{ url_for('home') }}" class="back">
-            ← Home
+            â† Home
         </a>
 
         <h1>Cash Out</h1>
@@ -382,7 +383,7 @@
 
             <div class="lock">
 
-                🔒 <strong>Withdrawal temporarily locked.</strong>
+                ðŸ”’ <strong>Withdrawal temporarily locked.</strong>
 
                 <br>
 
@@ -448,7 +449,7 @@
                             for="mtn"
                             class="network-label"
                         >
-                            🟡 MTN Rwanda
+                            ðŸŸ¡ MTN Rwanda
                         </label>
 
                     </div>
@@ -468,7 +469,7 @@
                             for="airtel"
                             class="network-label"
                         >
-                            🔴 Airtel Rwanda
+                            ðŸ”´ Airtel Rwanda
                         </label>
 
                     </div>
@@ -549,7 +550,7 @@
 
                         <div class="details">
                             {{ item["network"] }}
-                            •
+                            â€¢
                             {{ item["phone"] }}
                             <br>
                             {{ item["created_at"][:16].replace("T", " ") }}
@@ -583,22 +584,22 @@
     <div class="nav-inner">
 
         <a href="{{ url_for('home') }}" class="nav-item">
-            <span class="nav-icon">⌂</span>
+            <span class="nav-icon">âŒ‚</span>
             <span>Home</span>
         </a>
 
         <a href="{{ url_for('cash_in') }}" class="nav-item">
-            <span class="nav-icon">＋</span>
+            <span class="nav-icon">ï¼‹</span>
             <span>Cash In</span>
         </a>
 
         <a href="{{ url_for('cash_out') }}" class="nav-item active">
-            <span class="nav-icon">↗</span>
+            <span class="nav-icon">â†—</span>
             <span>Cash Out</span>
         </a>
 
         <a href="{{ url_for('profile') }}" class="nav-item">
-            <span class="nav-icon">◯</span>
+            <span class="nav-icon">â—¯</span>
             <span>Profile</span>
         </a>
 
@@ -838,3 +839,4 @@
 </body>
 </html>
 ```
+

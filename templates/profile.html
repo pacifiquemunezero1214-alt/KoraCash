@@ -1,6 +1,7 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - KoraCash</title>
@@ -309,13 +310,13 @@
     <div class="topbar-row">
         <div class="brand">KoraCash</div>
 
-        <a href="{{ url_for('home') }}" class="back-btn">←</a>
+        <a href="{{ url_for('home') }}" class="back-btn">â†</a>
     </div>
 
     <div class="profile-head">
 
         <div class="avatar">
-            👤
+            ðŸ‘¤
         </div>
 
         <h1>My Profile</h1>
@@ -436,7 +437,7 @@
                 class="copy-btn"
                 onclick="copyReferral()"
             >
-                📋 Copy Link
+                ðŸ“‹ Copy Link
             </button>
 
             <button
@@ -444,7 +445,7 @@
                 class="share-btn"
                 onclick="shareReferral()"
             >
-                📤 Share
+                ðŸ“¤ Share
             </button>
 
         </div>
@@ -469,11 +470,11 @@
             class="action-btn menu-btn"
         >
             <span class="menu-left">
-                <span class="menu-icon">🔐</span>
+                <span class="menu-icon">ðŸ”</span>
                 <span>Change Password</span>
             </span>
 
-            <span>›</span>
+            <span>â€º</span>
         </a>
 
 
@@ -482,11 +483,11 @@
             class="action-btn menu-btn"
         >
             <span class="menu-left">
-                <span class="menu-icon">🔔</span>
+                <span class="menu-icon">ðŸ””</span>
                 <span>Notifications</span>
             </span>
 
-            <span>›</span>
+            <span>â€º</span>
         </a>
 
 
@@ -495,11 +496,11 @@
             class="action-btn menu-btn"
         >
             <span class="menu-left">
-                <span class="menu-icon">❓</span>
+                <span class="menu-icon">â“</span>
                 <span>Help Center</span>
             </span>
 
-            <span>›</span>
+            <span>â€º</span>
         </a>
 
 
@@ -508,11 +509,11 @@
             class="action-btn menu-btn logout"
         >
             <span class="menu-left">
-                <span class="menu-icon">🚪</span>
+                <span class="menu-icon">ðŸšª</span>
                 <span>Logout</span>
             </span>
 
-            <span>›</span>
+            <span>â€º</span>
         </a>
 
     </section>
@@ -528,7 +529,7 @@
         href="{{ url_for('home') }}"
         class="nav-item"
     >
-        <span class="nav-icon">🏠</span>
+        <span class="nav-icon">ðŸ </span>
         <span>Home</span>
     </a>
 
@@ -536,7 +537,7 @@
         href="{{ url_for('cash_in') }}"
         class="nav-item"
     >
-        <span class="nav-icon">💰</span>
+        <span class="nav-icon">ðŸ’°</span>
         <span>Cash In</span>
     </a>
 
@@ -544,7 +545,7 @@
         href="{{ url_for('cash_out') }}"
         class="nav-item"
     >
-        <span class="nav-icon">💸</span>
+        <span class="nav-icon">ðŸ’¸</span>
         <span>Cash Out</span>
     </a>
 
@@ -552,7 +553,7 @@
         href="{{ url_for('profile') }}"
         class="nav-item active"
     >
-        <span class="nav-icon">👤</span>
+        <span class="nav-icon">ðŸ‘¤</span>
         <span>Profile</span>
     </a>
 
