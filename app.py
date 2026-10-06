@@ -664,7 +664,19 @@ def migrate_database(conn):
         "withdrawal_locked_until",
         "TEXT",
     )
+    ensure_column(
+        conn,
+        "users",
+        "login_failed_attempts",
+        "INTEGER NOT NULL DEFAULT 0",
+    )
 
+    ensure_column(
+        conn,
+        "users",
+        "login_locked_until",
+        "TEXT",
+    )
     # --------------------------------------------------------
     # CASH INS
     # --------------------------------------------------------
@@ -3001,6 +3013,104 @@ def login():
                     "login.html"
                 )
 
+            # ------------------------------------------------
+            # CHECK LOGIN LOCK
+            # ------------------------------------------------
+
+            locked_until = user[
+                "login_locked_until"
+            ]
+
+            if locked_until:
+
+                try:
+
+                    locked_until_dt = datetime.fromisoformat(
+                        locked_until
+                    )
+
+                    current_time = datetime.now(
+                        timezone.utc
+                    )
+
+                    if (
+                        current_time
+                        < locked_until_dt
+                    ):
+
+                        remaining_seconds = int(
+                            (
+                                locked_until_dt
+                                - current_time
+                            ).total_seconds()
+                        )
+
+                        remaining_minutes = max(
+                            1,
+                            (
+                                remaining_seconds
+                                + 59
+                            ) // 60,
+                        )
+
+                        flash(
+                            (
+                                "Too many failed login attempts. "
+                                f"Please try again in "
+                                f"{remaining_minutes} minute(s)."
+                            ),
+                            "danger",
+                        )
+
+                        return render_template(
+                            "login.html"
+                        )
+
+                    # ------------------------------------------------
+                    # LOCK EXPIRED → RESET LOGIN ATTEMPTS
+                    # ------------------------------------------------
+
+                    conn.execute(
+                        """
+                        UPDATE users
+                        SET
+                            login_failed_attempts = 0,
+                            login_locked_until = NULL
+                        WHERE id = ?
+                        """,
+                        (
+                            user["id"],
+                        ),
+                    )
+
+                    conn.commit()
+
+                except (
+                    ValueError,
+                    TypeError,
+                ):
+
+                    # Invalid lock timestamp → safely reset it
+
+                    conn.execute(
+                        """
+                        UPDATE users
+                        SET
+                            login_failed_attempts = 0,
+                            login_locked_until = NULL
+                        WHERE id = ?
+                        """,
+                        (
+                            user["id"],
+                        ),
+                    )
+
+                    conn.commit()
+
+            # ------------------------------------------------
+            # CHECK ACCOUNT STATUS
+            # ------------------------------------------------
+
             if not user["is_active"]:
 
                 flash(
@@ -3012,24 +3122,105 @@ def login():
                     "login.html"
                 )
 
+            # ------------------------------------------------
+            # CHECK PASSWORD
+            # ------------------------------------------------
+
             if not check_password_hash(
                 user["password_hash"],
                 password,
             ):
 
-                flash(
-                    "Invalid phone number or password.",
-                    "danger",
-                )
+                failed_attempts = (
+                    user[
+                        "login_failed_attempts"
+                    ]
+                    or 0
+                ) + 1
+
+                # --------------------------------------------
+                # 5 FAILED ATTEMPTS → 15 MINUTE LOCK
+                # --------------------------------------------
+
+                if failed_attempts >= 5:
+
+                    locked_until_dt = (
+                        datetime.now(
+                            timezone.utc
+                        )
+                        + timedelta(
+                            minutes=15
+                        )
+                    )
+
+                    conn.execute(
+                        """
+                        UPDATE users
+                        SET
+                            login_failed_attempts = ?,
+                            login_locked_until = ?
+                        WHERE id = ?
+                        """,
+                        (
+                            failed_attempts,
+                            locked_until_dt.isoformat(),
+                            user["id"],
+                        ),
+                    )
+
+                    conn.commit()
+
+                    flash(
+                        (
+                            "Too many failed login attempts. "
+                            "Your login has been locked for 15 minutes."
+                        ),
+                        "danger",
+                    )
+
+                else:
+
+                    conn.execute(
+                        """
+                        UPDATE users
+                        SET login_failed_attempts = ?
+                        WHERE id = ?
+                        """,
+                        (
+                            failed_attempts,
+                            user["id"],
+                        ),
+                    )
+
+                    conn.commit()
+
+                    remaining_attempts = (
+                        5 - failed_attempts
+                    )
+
+                    flash(
+                        (
+                            "Invalid phone number or password. "
+                            f"{remaining_attempts} attempt(s) remaining."
+                        ),
+                        "danger",
+                    )
 
                 return render_template(
                     "login.html"
                 )
 
+            # ------------------------------------------------
+            # SUCCESSFUL LOGIN → RESET FAILED ATTEMPTS
+            # ------------------------------------------------
+
             conn.execute(
                 """
                 UPDATE users
-                SET last_login = ?
+                SET
+                    last_login = ?,
+                    login_failed_attempts = 0,
+                    login_locked_until = NULL
                 WHERE id = ?
                 """,
                 (
@@ -3057,6 +3248,7 @@ def login():
     return render_template(
         "login.html"
     )
+
 
 
 # ============================================================
