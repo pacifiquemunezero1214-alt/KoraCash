@@ -1,5 +1,4 @@
-html
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
@@ -442,7 +441,7 @@ html
     <div class="header-inner">
 
         <a href="{{ url_for('home') }}" class="back">
-            ← Home
+            â† Home
         </a>
 
         <h1>Save &amp; Earn for 4 Months</h1>
@@ -497,7 +496,7 @@ html
                 >
 
                     <div class="plan-icon">
-                        💰
+                        ðŸ’°
                     </div>
 
                     <div class="plan-name">
@@ -514,9 +513,9 @@ html
                     </div>
 
                     <div class="plan-reward">
-                        🎬 Video: 300 Frw/day<br>
-                        📝 Task: 300 Frw/day<br>
-                        💵 Daily Total: 600 Frw
+                        ðŸŽ¬ Video: 300 Frw/day<br>
+                        ðŸ“ Task: 300 Frw/day<br>
+                        ðŸ’µ Daily Total: 600 Frw
                     </div>
 
                 </label>
@@ -539,7 +538,7 @@ html
                 >
 
                     <div class="plan-icon">
-                        💎
+                        ðŸ’Ž
                     </div>
 
                     <div class="plan-name">
@@ -556,9 +555,9 @@ html
                     </div>
 
                     <div class="plan-reward">
-                        🎬 Video: 600 Frw/day<br>
-                        📝 Task: 600 Frw/day<br>
-                        💵 Daily Total: 1,200 Frw
+                        ðŸŽ¬ Video: 600 Frw/day<br>
+                        ðŸ“ Task: 600 Frw/day<br>
+                        ðŸ’µ Daily Total: 1,200 Frw
                     </div>
 
                 </label>
@@ -588,7 +587,7 @@ html
                 href="tel:{{ payment_number }}"
                 class="call-btn"
             >
-                📞 Call Now
+                ðŸ“ž Call Now
             </a>
 
         </div>
@@ -606,18 +605,16 @@ html
                 id="amount"
                 value=""
             >
-
-            <input
-                type="hidden"
-                name="request_type"
-                id="requestType"
-                value="save"
-            >
-
+<input
+    type="hidden"
+    name="request_type"
+    id="requestType"
+    value="save"
+>
             <div class="proof-section">
 
                 <div class="proof-title">
-                    📸 Upload MoMo Payment Message
+                    ðŸ“¸ Upload MoMo Payment Message
                 </div>
 
                 <div class="proof-description">
@@ -633,7 +630,7 @@ html
                 >
 
                     <div class="upload-icon">
-                        📤
+                        ðŸ“¤
                     </div>
 
                     <span class="upload-label">
@@ -682,7 +679,7 @@ html
 
         <div class="admin-note">
 
-            🔐 <strong>Manual Verification:</strong>
+            ðŸ” <strong>Manual Verification:</strong>
             KoraCash does not automatically approve payments.
             Your uploaded MoMo screenshot will be reviewed by
             an admin before your saved balance is updated.
@@ -741,7 +738,7 @@ html
             href="{{ url_for('home') }}"
             class="nav-item"
         >
-            <span class="nav-icon">⌂</span>
+            <span class="nav-icon">âŒ‚</span>
             <span>Home</span>
         </a>
 
@@ -749,7 +746,7 @@ html
             href="{{ url_for('cash_in') }}"
             class="nav-item active"
         >
-            <span class="nav-icon">＋</span>
+            <span class="nav-icon">ï¼‹</span>
             <span>Save</span>
         </a>
 
@@ -757,7 +754,7 @@ html
             href="{{ url_for('cash_out') }}"
             class="nav-item"
         >
-            <span class="nav-icon">↗</span>
+            <span class="nav-icon">â†—</span>
             <span>Cash Out</span>
         </a>
 
@@ -765,7 +762,7 @@ html
             href="{{ url_for('profile') }}"
             class="nav-item"
         >
-            <span class="nav-icon">◯</span>
+            <span class="nav-icon">â—¯</span>
             <span>Profile</span>
         </a>
 
@@ -931,4 +928,3 @@ html
 
 </body>
 </html>
-

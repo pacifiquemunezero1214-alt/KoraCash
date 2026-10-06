@@ -1,4 +1,4 @@
-﻿```html
+﻿html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -330,7 +330,7 @@
     <div class="header-inner">
 
         <a href="{{ url_for('home') }}" class="back">
-            â† Home
+            ← Home
         </a>
 
         <h1>Cash Out</h1>
@@ -383,7 +383,7 @@
 
             <div class="lock">
 
-                ðŸ”’ <strong>Withdrawal temporarily locked.</strong>
+                🔒 <strong>Withdrawal temporarily locked.</strong>
 
                 <br>
 
@@ -449,7 +449,7 @@
                             for="mtn"
                             class="network-label"
                         >
-                            ðŸŸ¡ MTN Rwanda
+                            🟡 MTN Rwanda
                         </label>
 
                     </div>
@@ -469,7 +469,7 @@
                             for="airtel"
                             class="network-label"
                         >
-                            ðŸ”´ Airtel Rwanda
+                            🔴 Airtel Rwanda
                         </label>
 
                     </div>
@@ -550,7 +550,7 @@
 
                         <div class="details">
                             {{ item["network"] }}
-                            â€¢
+                            •
                             {{ item["phone"] }}
                             <br>
                             {{ item["created_at"][:16].replace("T", " ") }}
@@ -584,22 +584,22 @@
     <div class="nav-inner">
 
         <a href="{{ url_for('home') }}" class="nav-item">
-            <span class="nav-icon">âŒ‚</span>
+            <span class="nav-icon">⌂</span>
             <span>Home</span>
         </a>
 
         <a href="{{ url_for('cash_in') }}" class="nav-item">
-            <span class="nav-icon">ï¼‹</span>
+            <span class="nav-icon">＋</span>
             <span>Cash In</span>
         </a>
 
         <a href="{{ url_for('cash_out') }}" class="nav-item active">
-            <span class="nav-icon">â†—</span>
+            <span class="nav-icon">↗</span>
             <span>Cash Out</span>
         </a>
 
         <a href="{{ url_for('profile') }}" class="nav-item">
-            <span class="nav-icon">â—¯</span>
+            <span class="nav-icon">◯</span>
             <span>Profile</span>
         </a>
 
@@ -838,5 +838,4 @@
 
 </body>
 </html>
-```
 
