@@ -538,10 +538,157 @@
                 font-size: 16px;
             }
         }
+
+        /* ==============================
+           KORACASH BACKGROUND SLIDESHOW
+           3 images / 3 seconds each
+        ============================== */
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            position: relative;
+            background: #08111f;
+            overflow-x: hidden;
+        }
+
+        .background-slideshow {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            overflow: hidden;
+            background: #08111f;
+        }
+
+        .background-slideshow::before,
+        .background-slideshow::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        .background-slideshow::before {
+            background:
+                linear-gradient(
+                    rgba(3, 10, 20, 0.62),
+                    rgba(3, 10, 20, 0.72)
+                ),
+                url("{{ url_for('static', filename='images/koracash-background.png') }}")
+                center center / cover no-repeat;
+            animation: koracashBackgroundOne 9s infinite;
+        }
+
+        .background-slideshow::after {
+            background:
+                linear-gradient(
+                    rgba(3, 10, 20, 0.62),
+                    rgba(3, 10, 20, 0.72)
+                ),
+                url("{{ url_for('static', filename='images/koracash-background-2.png') }}")
+                center center / cover no-repeat;
+            opacity: 0;
+            animation: koracashBackgroundTwo 9s infinite;
+        }
+
+        .background-slideshow-third {
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(
+                    rgba(3, 10, 20, 0.62),
+                    rgba(3, 10, 20, 0.72)
+                ),
+                url("{{ url_for('static', filename='images/koracash-background-3.png') }}")
+                center center / cover no-repeat;
+            opacity: 0;
+            animation: koracashBackgroundThree 9s infinite;
+        }
+
+        @keyframes koracashBackgroundOne {
+            0%, 27% {
+                opacity: 1;
+            }
+            33%, 94% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes koracashBackgroundTwo {
+            0%, 27% {
+                opacity: 0;
+            }
+            33%, 60% {
+                opacity: 1;
+            }
+            66%, 100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes koracashBackgroundThree {
+            0%, 60% {
+                opacity: 0;
+            }
+            66%, 94% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+
+        /* Keep the application content above the background. */
+        .topbar,
+        .container,
+        .bottom-nav {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Slight transparency lets the new background remain visible
+           without reducing readability of the KoraCash interface. */
+        .topbar {
+            background: rgba(255, 255, 255, 0.96);
+        }
+
+        .bottom-nav {
+            background: rgba(255, 255, 255, 0.97);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .background-slideshow::before,
+            .background-slideshow::after,
+            .background-slideshow-third {
+                animation: none;
+            }
+
+            .background-slideshow::before {
+                opacity: 1;
+            }
+
+            .background-slideshow::after,
+            .background-slideshow-third {
+                opacity: 0;
+            }
+        }
+
     </style>
 </head>
 
+
 <body>
+
+    <div class="background-slideshow" aria-hidden="true">
+        <div class="background-slideshow-third"></div>
+    </div>
+
 
 <header class="topbar">
 
