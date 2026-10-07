@@ -1,6 +1,12 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<meta name="theme-color" content="#08111f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KoraCash">
  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -726,6 +732,26 @@
     <!-- ==============================
          BALANCE
     ============================== -->
+<button
+    id="installKoraCashBtn"
+    type="button"
+    style="
+        display:none;
+        width:100%;
+        margin:14px 0;
+        padding:14px 18px;
+        border:none;
+        border-radius:14px;
+        background:#08111f;
+        color:white;
+        font-size:15px;
+        font-weight:700;
+        cursor:pointer;
+        box-shadow:0 8px 25px rgba(0,0,0,0.18);
+    "
+>
+    📲 Install KoraCash
+</button>
 
     <section class="balance-card">
 
@@ -2680,6 +2706,49 @@
     }
 
 </script>
+<script>
+(function () {
+    let deferredPrompt = null;
 
+    const installButton = document.getElementById("installKoraCashBtn");
+
+    if (!installButton) {
+        return;
+    }
+
+    window.addEventListener("beforeinstallprompt", function (event) {
+        event.preventDefault();
+
+        deferredPrompt = event;
+
+        installButton.style.display = "block";
+    });
+
+    installButton.addEventListener("click", async function () {
+        if (!deferredPrompt) {
+            return;
+        }
+
+        deferredPrompt.prompt();
+
+        const result = await deferredPrompt.userChoice;
+
+        if (result.outcome === "accepted") {
+            installButton.style.display = "none";
+        }
+
+        deferredPrompt = null;
+    });
+
+    window.addEventListener("appinstalled", function () {
+        installButton.style.display = "none";
+        deferredPrompt = null;
+    });
+
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+        installButton.style.display = "none";
+    }
+})();
+</script>
 </body>
 </html>

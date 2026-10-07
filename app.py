@@ -8,7 +8,6 @@ from psycopg.rows import dict_row
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from functools import wraps
-
 from flask import (
     Flask,
     render_template,
@@ -18,8 +17,8 @@ from flask import (
     session,
     flash,
     jsonify,
+    send_from_directory,
 )
-
 from werkzeug.security import (
     generate_password_hash,
     check_password_hash,
@@ -151,6 +150,13 @@ DATABASE_URL = os.getenv(
 )
 
 app = Flask(__name__)
+@app.route("/service-worker.js")
+def service_worker():
+    return send_from_directory(
+        app.static_folder,
+        "service-worker.js",
+        mimetype="application/javascript"
+    )
 
 app.config["SECRET_KEY"] = os.getenv(
     "KORACASH_SECRET_KEY",

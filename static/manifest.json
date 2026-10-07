@@ -1,0 +1,24 @@
+{
+  "name": "KoraCash",
+  "short_name": "KoraCash",
+  "description": "KoraCash earning and savings platform",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08111f",
+  "theme_color": "#08111f",
+  "lang": "en",
+  "categories": [
+    "finance",
+    "business"
+  ],
+  "icons": [
+    {
+      "src": "/static/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
